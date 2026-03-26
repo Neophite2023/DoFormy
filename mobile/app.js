@@ -30,17 +30,23 @@ function initSync() {
     const btnSync = document.getElementById('btn-sync');
     if (btnSync) {
         btnSync.onclick = async () => {
+            console.log('Sync clicked, API URL:', DoFormyEngine.getApiUrl());
             btnSync.textContent = '⏳';
             try {
+                console.log('Fetching from server...');
                 const serverData = await DoFormyEngine.getData();
+                console.log('Server data received:', serverData);
                 currentData = serverData;
+                console.log('Saving to server...');
                 await DoFormyEngine.saveData(currentData);
+                console.log('Save complete');
                 btnSync.textContent = '✓';
                 setTimeout(() => btnSync.textContent = '🔄', 2000);
                 location.reload();
             } catch (e) {
-                btnSync.textContent = '❌';
                 console.error('Sync failed:', e);
+                btnSync.textContent = '❌';
+                alert('Chyba synchronizácie: ' + e.message);
                 setTimeout(() => btnSync.textContent = '🔄', 2000);
             }
         };

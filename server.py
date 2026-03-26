@@ -51,6 +51,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        print(f"GET request: {self.path}", flush=True)
         if self.path == "/api/data":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -72,9 +73,11 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             conn.close()
             self.wfile.write(json.dumps({"user": user_data, "history": history_data}).encode())
         else:
+            # Serve static files
             super().do_GET()
 
     def do_POST(self):
+        print(f"POST request: {self.path}", flush=True)
         if self.path == "/api/quit":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -83,10 +86,9 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "shutdown"}).encode())
             print("\n!!! DoFormy: Vypínam server a CMD okno !!!", flush=True)
             
-            # Najskôr rázne ukončenie celého procesu cez PID
             def kill_self():
                 time.sleep(0.3)
-                os.kill(os.getpid(), 9) # Signál 9 je na Windows rázne zabitie procesu
+                os.kill(os.getpid(), 9)
             
             threading.Thread(target=kill_self).start()
             return
@@ -115,6 +117,9 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
 
 def run_server():
     init_db()
+    # Zmeníme working directory na projekt
+    web_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(web_dir)
     threading.Thread(target=open_browser, daemon=True).start()
     server = http.server.HTTPServer(('', PORT), DoFormyHandler)
     print(f"DoFormy Server beží na porte {PORT}...", flush=True)
