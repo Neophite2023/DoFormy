@@ -72,8 +72,12 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             } for row in cursor.fetchall()}
             conn.close()
             self.wfile.write(json.dumps({"user": user_data, "history": history_data}).encode())
+        elif self.path.startswith("/api/"):
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"API not found")
         else:
-            # Serve static files
+            # Serve static files - use current directory
             super().do_GET()
 
     def do_POST(self):
@@ -120,12 +124,14 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
 
 def run_server():
     init_db()
-    # Zmeníme working directory na projekt
     web_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(web_dir)
+    
+    # Allow binding to all interfaces for Tailscale
     threading.Thread(target=open_browser, daemon=True).start()
     server = http.server.HTTPServer(('', PORT), DoFormyHandler)
     print(f"DoFormy Server beží na porte {PORT}...", flush=True)
+    print(f"Serving from: {os.getcwd()}", flush=True)
     try:
         server.serve_forever()
     except:
