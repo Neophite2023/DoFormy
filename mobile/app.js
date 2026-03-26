@@ -29,33 +29,51 @@ function initNavigation() {
 function initSync() {
     const btnSync = document.getElementById('btn-sync');
     console.log('initSync called, btnSync:', btnSync);
-    if (btnSync) {
-        btnSync.onclick = async () => {
-            alert('Sync started! URL: ' + DoFormyEngine.getApiUrl());
-            console.log('Sync clicked, API URL:', DoFormyEngine.getApiUrl());
-            btnSync.textContent = '⏳';
-            try {
-                const localData = await DoFormyEngine.getData();
-                console.log('Local data:', localData);
-                alert('Local data loaded, merging...');
-                const merged = await DoFormyEngine.syncData(localData);
-                console.log('Merged data:', merged);
-                currentData = merged;
-                alert('Sync complete!');
-                console.log('Sync complete');
-                btnSync.textContent = '✓';
-                setTimeout(() => btnSync.textContent = '🔄', 2000);
-                location.reload();
-            } catch (e) {
-                console.error('Sync failed:', e);
-                alert('Chyba: ' + e.message);
-                btnSync.textContent = '❌';
-                setTimeout(() => btnSync.textContent = '🔄', 2000);
-            }
-        };
-    } else {
-        console.error('btn-sync not found!');
+    
+    // Debug - show current API URL on screen
+    const apiUrl = DoFormyEngine.getApiUrl();
+    console.log('Current API URL:', apiUrl);
+    
+    if (!btnSync) {
+        console.error('btn-sync button NOT FOUND!');
+        return;
     }
+    
+    btnSync.onclick = async () => {
+        alert('🔄 Sync started!\nURL: ' + DoFormyEngine.getApiUrl());
+        console.log('Sync clicked, API URL:', DoFormyEngine.getApiUrl());
+        btnSync.textContent = '⏳';
+        
+        try {
+            // Get local data first
+            const localRaw = localStorage.getItem('doformy_data');
+            const localData = localRaw ? JSON.parse(localRaw) : DoFormyEngine.getInitialData();
+            console.log('Local data loaded, exp:', localData.user.exp);
+            alert('Local data: ' + localData.user.exp + ' XP');
+            
+            // Fetch server data
+            alert('Fetching server data...');
+            const serverData = await DoFormyEngine.getData();
+            console.log('Server data received:', serverData);
+            alert('Server data: ' + serverData.user.exp + ' XP');
+            
+            // Merge
+            alert('Merging...');
+            const merged = await DoFormyEngine.syncData(localData);
+            console.log('Merged, new exp:', merged.user.exp);
+            alert('Done! New XP: ' + merged.user.exp);
+            
+            currentData = merged;
+            btnSync.textContent = '✓';
+            setTimeout(() => btnSync.textContent = '🔄', 3000);
+            location.reload();
+        } catch (e) {
+            console.error('Sync error:', e);
+            alert('❌ Error: ' + e.message);
+            btnSync.textContent = '❌';
+            setTimeout(() => btnSync.textContent = '🔄', 3000);
+        }
+    };
 }
 
 function initSettings() {
