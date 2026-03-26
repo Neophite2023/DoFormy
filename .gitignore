@@ -1,0 +1,21 @@
+# DoFormy - Gitignore
+
+# Databáza - obsahuje citlivé údaje
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logy
+*.log
