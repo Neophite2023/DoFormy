@@ -28,66 +28,60 @@ function initNavigation() {
 
 function initSync() {
     const btnSync = document.getElementById('btn-sync');
-    if (!btnSync) {
-        console.error('btn-sync NOT FOUND');
-        return;
-    }
+    if (!btnSync) return;
     
     btnSync.onclick = async () => {
-        const apiUrl = DoFormyEngine.getApiUrl();
+        // Get API URL from localStorage or use default
+        let apiUrl = localStorage.getItem('doformy_api_url');
+        if (!apiUrl) {
+            apiUrl = prompt('Zadajte server URL (napr. http://100.x.x.x:8000/api):');
+            if (apiUrl) localStorage.setItem('doformy_api_url', apiUrl);
+            else return;
+        }
+        
         btnSync.textContent = '⏳';
         
         try {
-            // Step 1: Get local data
+            // Get local
             const local = localStorage.getItem('doformy_data');
-            const localData = local ? JSON.parse(local) : {user: {exp: 0, levelName: 'Fáza 1: Základy', stepsGoal: 6000, startDate: new Date().toISOString()}, history: {}};
+            const localData = local ? JSON.parse(local) : {user: {exp: 0}, history: {}};
             
-            // Step 2: Get server data
+            // Get server
             const serverRes = await fetch(apiUrl);
-            if (!serverRes.ok) throw new Error('Server offline');
+            if (!serverRes.ok) throw new Error('Server unreachable');
             const serverData = await serverRes.json();
             
-            // Step 3: Merge - newer data wins
+            // Merge
             const merged = {
                 user: localData.user.exp >= serverData.user.exp ? localData.user : serverData.user,
                 history: {...serverData.history}
             };
             
             for (const date in localData.history) {
-                if (!merged.history[date]) {
-                    merged.history[date] = localData.history[date];
-                } else {
-                    const l = localData.history[date];
-                    const s = merged.history[date];
-                    merged.history[date] = {
-                        steps: (l.steps || 0) + (s.steps || 0),
-                        habit: l.habit || s.habit,
-                        workout: l.workout && l.workout.length > 0 ? l.workout : s.workout,
-                        weight: l.weight || s.weight,
-                        water: Math.max(l.water || 0, s.water || 0)
-                    };
+                if (!merged.history[date]) merged.history[date] = localData.history[date];
+                else {
+                    merged.history[date].steps = (localData.history[date].steps || 0) + (merged.history[date].steps || 0);
+                    merged.history[date].water = Math.max(localData.history[date].water || 0, merged.history[date].water || 0);
                 }
             }
             
-            // Step 4: Save to server
-            const saveRes = await fetch(apiUrl, {
+            // Save
+            await fetch(apiUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(merged)
             });
-            if (!saveRes.ok) throw new Error('Save failed');
             
-            // Step 5: Save locally
             localStorage.setItem('doformy_data', JSON.stringify(merged));
-            
             btnSync.textContent = '✓';
             setTimeout(() => btnSync.textContent = '🔄', 2000);
             location.reload();
-            
         } catch (e) {
             console.error(e);
             btnSync.textContent = '❌';
-            alert('Sync error: ' + e.message);
+            // Clear URL if wrong
+            localStorage.removeItem('doformy_api_url');
+            alert('Chyba: ' + e.message + '. Skúste znova zadať URL v Nastaveniach.');
             setTimeout(() => btnSync.textContent = '🔄', 2000);
         }
     };
