@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUI(currentData);
     initSettings();
     initNavigation();
+    initSync();
 });
 
 function initNavigation() {
@@ -23,6 +24,27 @@ function initNavigation() {
             document.getElementById('view-settings').style.display = view === 'settings' ? 'block' : 'none';
         };
     });
+}
+
+function initSync() {
+    const btnSync = document.getElementById('btn-sync');
+    if (btnSync) {
+        btnSync.onclick = async () => {
+            btnSync.textContent = '⏳';
+            try {
+                const serverData = await DoFormyEngine.getData();
+                currentData = serverData;
+                await DoFormyEngine.saveData(currentData);
+                btnSync.textContent = '✓';
+                setTimeout(() => btnSync.textContent = '🔄', 2000);
+                location.reload();
+            } catch (e) {
+                btnSync.textContent = '❌';
+                console.error('Sync failed:', e);
+                setTimeout(() => btnSync.textContent = '🔄', 2000);
+            }
+        };
+    }
 }
 
 function initSettings() {

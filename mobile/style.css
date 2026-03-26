@@ -37,6 +37,20 @@ header {
     margin-bottom: 0.5rem;
 }
 
+.btn-sync {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.btn-sync:hover {
+    background: #ECF0F1;
+}
+
 .badge {
     background: #E8F8EF;
     color: var(--do-primary);
