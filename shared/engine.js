@@ -98,6 +98,72 @@ export const DoFormyEngine = {
         } catch (e) { console.warn('Sync failed'); }
     },
 
+    async syncData(localData) {
+        const serverData = await this.getData();
+        
+        const merged = this.mergeData(localData, serverData);
+        
+        localStorage.setItem('doformy_data', JSON.stringify(merged));
+        
+        try {
+            await fetch(`${this.API_URL}/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(merged)
+            });
+        } catch (e) { console.warn('Sync save failed'); }
+        
+        return merged;
+    },
+
+    mergeData(localData, serverData) {
+        const merged = {
+            user: localData.user.exp >= serverData.user.exp ? localData.user : serverData.user,
+            history: { ...serverData.history }
+        };
+        
+        for (const date in localData.history) {
+            const localRec = localData.history[date];
+            const serverRec = serverData.history[date];
+            
+            if (!serverRec) {
+                merged.history[date] = localRec;
+            } else {
+                merged.history[date] = this.mergeDayRecord(localRec, serverRec);
+            }
+        }
+        
+        return merged;
+    },
+
+    mergeDayRecord(local, server) {
+        return {
+            steps: (local.steps || 0) + (server.steps || 0),
+            habit: local.habit || server.habit,
+            workout: this.mergeWorkout(local.workout, server.workout),
+            weight: local.weight || server.weight,
+            water: Math.max(local.water || 0, server.water || 0)
+        };
+    },
+
+    mergeWorkout(localWorkout, serverWorkout) {
+        if (!localWorkout || localWorkout.length === 0) return serverWorkout;
+        if (!serverWorkout || serverWorkout.length === 0) return localWorkout;
+        
+        const merged = [...serverWorkout];
+        
+        for (const localEx of localWorkout) {
+            const idx = merged.findIndex(m => m.name === localEx.name);
+            if (idx >= 0) {
+                merged[idx].reps = Math.max(merged[idx].reps || 0, localEx.reps || 0);
+            } else {
+                merged.push(localEx);
+            }
+        }
+        
+        return merged;
+    },
+
     getInitialData() {
         return {
             user: { exp: 0, levelName: 'Fáza 1: Základy', stepsGoal: 6000, startDate: new Date().toISOString() },

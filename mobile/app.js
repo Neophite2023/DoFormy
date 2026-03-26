@@ -33,13 +33,11 @@ function initSync() {
             console.log('Sync clicked, API URL:', DoFormyEngine.getApiUrl());
             btnSync.textContent = '⏳';
             try {
-                console.log('Fetching from server...');
-                const serverData = await DoFormyEngine.getData();
-                console.log('Server data received:', serverData);
-                currentData = serverData;
-                console.log('Saving to server...');
-                await DoFormyEngine.saveData(currentData);
-                console.log('Save complete');
+                const localData = await DoFormyEngine.getData();
+                console.log('Merging data...');
+                const merged = await DoFormyEngine.syncData(localData);
+                currentData = merged;
+                console.log('Sync complete');
                 btnSync.textContent = '✓';
                 setTimeout(() => btnSync.textContent = '🔄', 2000);
                 location.reload();
