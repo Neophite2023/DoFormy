@@ -28,50 +28,67 @@ function initNavigation() {
 
 function initSync() {
     const btnSync = document.getElementById('btn-sync');
-    console.log('initSync called, btnSync:', btnSync);
-    
-    // Debug - show current API URL on screen
-    const apiUrl = DoFormyEngine.getApiUrl();
-    console.log('Current API URL:', apiUrl);
-    
     if (!btnSync) {
-        console.error('btn-sync button NOT FOUND!');
+        console.error('btn-sync NOT FOUND');
         return;
     }
     
     btnSync.onclick = async () => {
-        alert('🔄 Sync started!\nURL: ' + DoFormyEngine.getApiUrl());
-        console.log('Sync clicked, API URL:', DoFormyEngine.getApiUrl());
+        const apiUrl = DoFormyEngine.getApiUrl();
         btnSync.textContent = '⏳';
         
         try {
-            // Get local data first
-            const localRaw = localStorage.getItem('doformy_data');
-            const localData = localRaw ? JSON.parse(localRaw) : DoFormyEngine.getInitialData();
-            console.log('Local data loaded, exp:', localData.user.exp);
-            alert('Local data: ' + localData.user.exp + ' XP');
+            // Step 1: Get local data
+            const local = localStorage.getItem('doformy_data');
+            const localData = local ? JSON.parse(local) : {user: {exp: 0, levelName: 'Fáza 1: Základy', stepsGoal: 6000, startDate: new Date().toISOString()}, history: {}};
             
-            // Fetch server data
-            alert('Fetching server data...');
-            const serverData = await DoFormyEngine.getData();
-            console.log('Server data received:', serverData);
-            alert('Server data: ' + serverData.user.exp + ' XP');
+            // Step 2: Get server data
+            const serverRes = await fetch(apiUrl);
+            if (!serverRes.ok) throw new Error('Server offline');
+            const serverData = await serverRes.json();
             
-            // Merge
-            alert('Merging...');
-            const merged = await DoFormyEngine.syncData(localData);
-            console.log('Merged, new exp:', merged.user.exp);
-            alert('Done! New XP: ' + merged.user.exp);
+            // Step 3: Merge - newer data wins
+            const merged = {
+                user: localData.user.exp >= serverData.user.exp ? localData.user : serverData.user,
+                history: {...serverData.history}
+            };
             
-            currentData = merged;
+            for (const date in localData.history) {
+                if (!merged.history[date]) {
+                    merged.history[date] = localData.history[date];
+                } else {
+                    const l = localData.history[date];
+                    const s = merged.history[date];
+                    merged.history[date] = {
+                        steps: (l.steps || 0) + (s.steps || 0),
+                        habit: l.habit || s.habit,
+                        workout: l.workout && l.workout.length > 0 ? l.workout : s.workout,
+                        weight: l.weight || s.weight,
+                        water: Math.max(l.water || 0, s.water || 0)
+                    };
+                }
+            }
+            
+            // Step 4: Save to server
+            const saveRes = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(merged)
+            });
+            if (!saveRes.ok) throw new Error('Save failed');
+            
+            // Step 5: Save locally
+            localStorage.setItem('doformy_data', JSON.stringify(merged));
+            
             btnSync.textContent = '✓';
-            setTimeout(() => btnSync.textContent = '🔄', 3000);
+            setTimeout(() => btnSync.textContent = '🔄', 2000);
             location.reload();
+            
         } catch (e) {
-            console.error('Sync error:', e);
-            alert('❌ Error: ' + e.message);
+            console.error(e);
             btnSync.textContent = '❌';
-            setTimeout(() => btnSync.textContent = '🔄', 3000);
+            alert('Sync error: ' + e.message);
+            setTimeout(() => btnSync.textContent = '🔄', 2000);
         }
     };
 }
