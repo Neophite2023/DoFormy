@@ -94,8 +94,10 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == "/api/save":
+            print(">>> /api/save received!", flush=True)
             content_length = int(self.headers['Content-Length'])
             data = json.loads(self.rfile.read(content_length))
+            print(f">>> Saving data: exp={data.get('user', {}).get('exp')}, history_keys={len(data.get('history', {}))}", flush=True)
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute("UPDATE user SET exp = ?, levelName = ?, stepsGoal = ? WHERE id = 1", (data['user']['exp'], data['user']['levelName'], data['user']['stepsGoal']))
@@ -109,6 +111,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                      stats.get('water', 0)))
             conn.commit()
             conn.close()
+            print(">>> Save complete!", flush=True)
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
