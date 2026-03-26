@@ -1,0 +1,343 @@
+:root {
+    --do-primary: #2ECC71;
+    --do-bg: #F0F4F2;
+    --sidebar-bg: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --text: #2C3E50;
+    --muted: #95A5A6;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--do-bg);
+    color: var(--text);
+    height: 100vh;
+}
+
+#do-desktop {
+    display: flex;
+    height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+.do-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 3rem;
+}
+
+.do-logo .icon { font-size: 1.5rem; }
+.do-logo h2 { color: var(--do-primary); font-size: 1.4rem; }
+
+nav { flex: 1; }
+
+.nav-item {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 1rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.nav-item.active {
+    background: #E8F8EF;
+    color: var(--do-primary);
+    font-weight: 600;
+}
+
+/* User Status */
+.user-status {
+    margin-top: auto;
+    padding: 1rem;
+    background: #F9FBF9;
+    border-radius: 16px;
+}
+
+#user-level-name { font-weight: 700; margin-bottom: 0.5rem; }
+
+.exp-bar-bg {
+    height: 6px;
+    background: #ECF0F1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.3rem;
+}
+
+#exp-bar-fill {
+    height: 100%;
+    background: var(--do-primary);
+    transition: width 0.5s ease;
+}
+
+#exp-text { font-size: 0.75rem; color: var(--muted); }
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding: 3rem;
+    overflow-y: auto;
+}
+
+header { margin-bottom: 3rem; }
+header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+#current-date { color: var(--muted); }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.day-stat {
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+.day-stat .dot-container {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 0.5rem;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ECF0F1;
+}
+
+.dot.active { background: var(--do-primary); }
+
+.milestone-card {
+    margin-top: 3rem;
+    background: var(--do-primary);
+    color: white;
+    padding: 2rem;
+    border-radius: 24px;
+    box-shadow: 0 10px 25px rgba(46, 204, 113, 0.2);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 30px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+.close-modal {
+    float: right;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--muted);
+}
+
+#qrcode {
+    margin: 1.5rem auto;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-quit {
+    margin-top: 2rem;
+    color: #E74C3C !important;
+    border: 1px solid transparent;
+}
+
+.view-section {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.phase-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 5px solid #ECF0F1;
+    box-shadow: var(--shadow);
+}
+
+.phase-card.active-phase {
+    border-left-color: var(--do-primary);
+}
+
+.phase-card h4 {
+    color: var(--do-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.phase-card .badge {
+    background: #E8F8EF;
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.plan-table th, .plan-table td {
+    padding: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #F0F4F2;
+}
+
+.plan-table th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+
+.today-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.widget-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.widget-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.widget-card h4 {
+    font-size: 0.9rem;
+    color: var(--do-primary);
+    margin-bottom: 0.5rem;
+}
+
+.widget-card p {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+.widget-card ul {
+    margin: 0.5rem 0 0 1rem;
+    font-size: 0.8rem;
+}
+
+.water-bar-bg {
+    height: 6px;
+    background: #ECF0F1;
+    border-radius: 3px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.water-bar-fill {
+    height: 100%;
+    background: #3498DB;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+#desktop-weight-chart {
+    height: 50px;
+    margin-top: 0.5rem;
+}
+
+.water-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.btn-widget {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--do-primary);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-widget:hover {
+    opacity: 0.9;
+}
+
+.btn-widget.btn-outline {
+    background: transparent;
+    border: 2px solid #ECF0F1;
+    color: var(--muted);
+}
+
+.btn-widget.btn-outline:hover {
+    background: #ECF0F1;
+}
+
+.weight-input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.weight-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 2px solid #ECF0F1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    outline: none;
+}
+
+.weight-input:focus {
+    border-color: var(--do-primary);
+}

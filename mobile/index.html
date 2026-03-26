@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DoFormy - Vnímavý pohyb</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ECC71">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="do-app">
+        <header>
+            <div class="user-info">
+                <span id="user-level" class="badge">Fáza 1: Adaptácia</span>
+                <span id="user-exp">0 XP</span>
+            </div>
+            <h1>Dnes</h1>
+        </header>
+
+        <main id="cards-container">
+            <!-- Karta Sily (Tréning) -->
+            <div id="card-workout" class="do-card">
+                <div class="card-icon">💪</div>
+                <div class="card-body">
+                    <h3>Karta Sily</h3>
+                    <p id="workout-desc">Dnes je deň oddychu.</p>
+                </div>
+                <button id="btn-workout" class="btn-do">Hotovo</button>
+            </div>
+
+            <!-- Karta Váhy -->
+            <div id="card-weight" class="do-card">
+                <div class="card-icon">⚖️</div>
+                <div class="card-body">
+                    <h3>Karta Váhy</h3>
+                    <p id="weight-val">-- kg</p>
+                    <p id="weight-change" class="weight-change"></p>
+                    <div class="weight-input-row">
+                        <input type="number" id="weight-input" placeholder="kg" step="0.1" class="weight-input">
+                        <button id="btn-weight-save" class="btn-do btn-small">Uložiť</button>
+                    </div>
+                    <div class="weight-chart-container">
+                        <canvas id="weight-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Karta Vody -->
+            <div id="card-water" class="do-card">
+                <div class="card-icon">💧</div>
+                <div class="card-body">
+                    <h3>Karta Vody</h3>
+                    <p id="water-val">0 / 2500 ml</p>
+                    <div class="water-progress">
+                        <div id="water-fill" class="water-fill"></div>
+                    </div>
+                    <div class="water-buttons">
+                        <button id="btn-water-add" class="btn-do btn-small">+250ml</button>
+                        <button id="btn-water-reset" class="btn-do btn-small btn-outline">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Karta Pohybu -->
+            <div id="card-steps" class="do-card">
+                <div class="card-icon">👣</div>
+                <div class="card-body">
+                    <h3>Karta Pohybu</h3>
+                    <div class="progress-info">
+                        <span id="steps-val">0</span> / <span id="steps-goal">5000</span>
+                    </div>
+                </div>
+                <button id="btn-steps" class="btn-do">Pridať</button>
+            </div>
+
+            <!-- Karta Návyku -->
+            <div id="card-habit" class="do-card">
+                <div class="card-icon">🌱</div>
+                <div class="card-body">
+                    <h3>Karta Návyku</h3>
+                    <p id="habit-desc">3 min. dýchanie</p>
+                </div>
+                <button id="btn-habit" class="btn-do">Mám splnené</button>
+            </div>
+        </main>
+
+        <nav class="do-nav">
+            <button class="nav-btn active">DoFormy</button>
+            <button class="nav-btn">Rast</button>
+        </nav>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
