@@ -31,25 +31,36 @@ function initSync() {
     if (!btnSync) return;
     
     btnSync.onclick = async () => {
-        // Get API URL from localStorage or use default
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
-            apiUrl = prompt('Zadajte server URL (napr. http://100.x.x.x:8000/api):');
-            if (apiUrl) localStorage.setItem('doformy_api_url', apiUrl);
-            else return;
+            const savedUrl = DoFormyEngine.getApiUrl();
+            apiUrl = savedUrl && savedUrl.includes('100.') ? savedUrl : prompt('Zadajte server URL (http://100.x.x.x:8000/api):');
+            if (apiUrl) {
+                localStorage.setItem('doformy_api_url', apiUrl);
+                DoFormyEngine.setApiUrl(apiUrl);
+            } else return;
         }
         
         btnSync.textContent = '⏳';
         
+        console.log('=== SYNC START ===');
+        console.log('URL:', apiUrl);
+        
         try {
+            // Test connection first
+            console.log('Testing connection...');
+            const testRes = await fetch(apiUrl);
+            console.log('Test response:', testRes.status);
+            
+            if (!testRes.ok) throw new Error('Server neodpovedá: ' + testRes.status);
+            
+            const serverData = await testRes.json();
+            console.log('Server data:', serverData);
+            
             // Get local
             const local = localStorage.getItem('doformy_data');
             const localData = local ? JSON.parse(local) : {user: {exp: 0}, history: {}};
-            
-            // Get server
-            const serverRes = await fetch(apiUrl);
-            if (!serverRes.ok) throw new Error('Server unreachable');
-            const serverData = await serverRes.json();
+            console.log('Local data:', localData);
             
             // Merge
             const merged = {
@@ -65,23 +76,28 @@ function initSync() {
                 }
             }
             
-            // Save
-            await fetch(apiUrl, {
+            console.log('Merged:', merged);
+            
+            // Save to server
+            const saveRes = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(merged)
             });
             
+            if (!saveRes.ok) throw new Error('Save failed: ' + saveRes.status);
+            
             localStorage.setItem('doformy_data', JSON.stringify(merged));
+            console.log('=== SYNC DONE ===');
+            
             btnSync.textContent = '✓';
             setTimeout(() => btnSync.textContent = '🔄', 2000);
             location.reload();
+            
         } catch (e) {
-            console.error(e);
+            console.error('ERROR:', e);
             btnSync.textContent = '❌';
-            // Clear URL if wrong
-            localStorage.removeItem('doformy_api_url');
-            alert('Chyba: ' + e.message + '. Skúste znova zadať URL v Nastaveniach.');
+            alert('Chyba: ' + e.message + '\n\nSkontroluj Tailscale pripojenie na iPhone.');
             setTimeout(() => btnSync.textContent = '🔄', 2000);
         }
     };
