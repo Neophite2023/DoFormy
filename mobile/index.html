@@ -87,9 +87,44 @@
         </main>
 
         <nav class="do-nav">
-            <button class="nav-btn active">DoFormy</button>
-            <button class="nav-btn">Rast</button>
+            <button class="nav-btn active" data-view="home">DoFormy</button>
+            <button class="nav-btn" data-view="settings">Nastavenia</button>
         </nav>
+    </div>
+
+    <!-- Settings View -->
+    <div id="view-settings" class="view-settings" style="display: none;">
+        <h2>Nastavenia</h2>
+        
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Server URL</h3>
+                <p class="settings-desc">Zadajte IP adresu servera (napr. Tailscale)</p>
+                <div class="api-input-row">
+                    <input type="text" id="api-url-input" placeholder="http://100.x.x.x:8000/api" class="api-input">
+                    <button id="btn-save-api" class="btn-do">Uložiť</button>
+                </div>
+                <p id="current-api-url" class="current-url"></p>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Synchronizácia</h3>
+                <p class="settings-desc">Stiahni/ulož dáta z/do servera</p>
+                <div class="sync-buttons">
+                    <button id="btn-sync-download" class="btn-do">Stiahnuť zo servera</button>
+                    <button id="btn-sync-upload" class="btn-do">Nahrať na server</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>O aplikácii</h3>
+                <p class="settings-desc">DoFormy v2.0</p>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>

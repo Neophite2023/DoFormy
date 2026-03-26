@@ -7,7 +7,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentData = await DoFormyEngine.getData();
     await initNotifications();
     initUI(currentData);
+    initSettings();
+    initNavigation();
 });
+
+function initNavigation() {
+    const navBtns = document.querySelectorAll('.do-nav .nav-btn');
+    navBtns.forEach(btn => {
+        btn.onclick = () => {
+            const view = btn.dataset.view;
+            navBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.getElementById('do-app').style.display = view === 'home' ? 'flex' : 'none';
+            document.getElementById('view-settings').style.display = view === 'settings' ? 'block' : 'none';
+        };
+    });
+}
+
+function initSettings() {
+    const apiInput = document.getElementById('api-url-input');
+    const currentApiUrl = document.getElementById('current-api-url');
+    const savedUrl = DoFormyEngine.getApiUrl();
+    
+    apiInput.value = savedUrl === 'http://localhost:8000/api' ? '' : savedUrl;
+    currentApiUrl.textContent = `Aktuálne: ${savedUrl}`;
+    
+    document.getElementById('btn-save-api').onclick = () => {
+        const url = apiInput.value.trim();
+        if (url) {
+            DoFormyEngine.setApiUrl(url);
+            currentApiUrl.textContent = `Aktuálne: ${url}`;
+            alert('URL uložená! Reštartujte aplikáciu.');
+        } else {
+            DoFormyEngine.setApiUrl('http://localhost:8000/api');
+            currentApiUrl.textContent = `Aktuálne: http://localhost:8000/api`;
+            alert('URL resetovaná na localhost!');
+        }
+    };
+    
+    document.getElementById('btn-sync-download').onclick = async () => {
+        try {
+            const data = await DoFormyEngine.getData();
+            currentData = data;
+            alert('Dáta stiahnuté zo servera!');
+            location.reload();
+        } catch (e) {
+            alert('Chyba: ' + e.message);
+        }
+    };
+    
+    document.getElementById('btn-sync-upload').onclick = async () => {
+        try {
+            await DoFormyEngine.saveData(currentData);
+            alert('Dáta nahraté na server!');
+        } catch (e) {
+            alert('Chyba: ' + e.message);
+        }
+    };
+}
 
 async function initNotifications() {
     const permission = await DoFormyEngine.requestNotificationPermission();

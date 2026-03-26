@@ -226,3 +226,50 @@ h1 {
 .btn-outline:active {
     background: #ECF0F1;
 }
+
+.view-settings {
+    padding: 1rem;
+}
+
+.view-settings h2 {
+    margin-bottom: 1.5rem;
+}
+
+.settings-desc {
+    font-size: 0.8rem;
+    color: var(--do-muted);
+    margin-bottom: 0.5rem;
+}
+
+.api-input-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.api-input {
+    flex: 1;
+    padding: 0.6rem;
+    border: 2px solid #ECF0F1;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.api-input:focus {
+    border-color: var(--do-primary);
+}
+
+.current-url {
+    font-size: 0.75rem;
+    color: var(--do-muted);
+    margin-top: 0.5rem;
+}
+
+.sync-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sync-buttons .btn-do {
+    flex: 1;
+}

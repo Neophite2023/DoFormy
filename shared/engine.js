@@ -2,7 +2,16 @@
  * DoFormy Engine 2.3 - Bezpečný a realistický štart
  */
 export const DoFormyEngine = {
-    API_URL: 'http://localhost:8000/api',
+    API_URL: localStorage.getItem('doformy_api_url') || 'http://localhost:8000/api',
+
+    setApiUrl(url) {
+        localStorage.setItem('doformy_api_url', url);
+        this.API_URL = url;
+    },
+
+    getApiUrl() {
+        return this.API_URL;
+    },
 
     LEVELS: [
         { name: 'Fáza 1: Základy', minExp: 0, desc: 'Budovanie techniky s vlastnou váhou. Činky zatiaľ odpočívajú.' },
