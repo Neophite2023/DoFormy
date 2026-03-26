@@ -102,7 +102,7 @@ function setupQR() {
 
     if (!btn || !modal) return;
 
-    const GITHUB_PAGES_URL = "https://vas-username.github.io/doformy/mobile/index.html";
+    const GITHUB_PAGES_URL = "https://neophite2023.github.io/DoFormy/mobile/index.html";
 
     btn.onclick = () => {
         qrContainer.innerHTML = "";
