@@ -19,6 +19,7 @@ async function initDesktop() {
         refreshUI();
 
         initSyncButton();
+        initLocalReset();
         renderFullPlan(currentData.user.levelName);
         setupQR();
         setupQuit();
@@ -75,6 +76,18 @@ function initSyncButton() {
             setTimeout(() => {
                 btnSync.textContent = '🔄';
             }, 2000);
+        }
+    };
+}
+
+function initLocalReset() {
+    const btnReset = document.getElementById('btn-reset-local');
+    if (!btnReset) return;
+
+    btnReset.onclick = () => {
+        if (confirm('Naozaj chcete vymazať lokálne dáta na desktope?')) {
+            localStorage.removeItem('doformy_data');
+            location.reload();
         }
     };
 }
