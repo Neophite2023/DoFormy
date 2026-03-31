@@ -1,8 +1,8 @@
 /**
- * DoFormy Engine 2.3 - Bezpečný a realistický štart
+ * DoFormy Engine 2.4 - robustnejsia synchronizacia
  */
 export const DoFormyEngine = {
-    API_URL: localStorage.getItem('doformy_api_url') || 'http://localhost:8000/api',
+    API_URL: localStorage.getItem('doformy_api_url') || 'https://doma-pc.tail85a624.ts.net:8000/api',
 
     setApiUrl(url) {
         localStorage.setItem('doformy_api_url', url);
@@ -53,7 +53,7 @@ export const DoFormyEngine = {
             ]
         },
         'Fáza 4: Kontrola (TUT)': {
-            sets: 4, reps: '6-10', tempo: '3s Negatívna fáza',
+            sets: 4, reps: '6-10', tempo: '3s negatívna fáza',
             exercises: [
                 { name: 'Pomalé drepy (15kg)', reps: '10' },
                 { name: 'Kliky (pomalé)', reps: 'Max' },
@@ -63,7 +63,7 @@ export const DoFormyEngine = {
             ]
         },
         'Fáza 5: Elita': {
-            sets: 5, reps: '12-15', tempo: 'Kruhové / Bez pauzy',
+            sets: 5, reps: '12-15', tempo: 'Kruhové / bez pauzy',
             exercises: [
                 { name: 'Angličáky (Burpees)', reps: '12' },
                 { name: 'Thrusters (Drep+Tlak 15kg)', reps: '10' },
@@ -74,108 +74,276 @@ export const DoFormyEngine = {
         }
     },
 
-    async getData() {
+    normalizeData(data) {
+        const base = data && typeof data === 'object' ? data : {};
+        const user = base.user && typeof base.user === 'object' ? base.user : {};
+        const history = base.history && typeof base.history === 'object' ? base.history : {};
+        const normalizedHistory = {};
+
+        for (const [date, record] of Object.entries(history)) {
+            normalizedHistory[date] = this.normalizeHistoryRecord(record);
+        }
+
+        return {
+            user: {
+                exp: Number(user.exp) || 0,
+                levelName: user.levelName || this.LEVELS[0].name,
+                stepsGoal: Number(user.stepsGoal) || 6000,
+                startDate: user.startDate || new Date().toISOString(),
+                ...(user.id ? { id: user.id } : {})
+            },
+            history: normalizedHistory
+        };
+    },
+
+    normalizeHistoryRecord(record) {
+        const source = record && typeof record === 'object' ? record : {};
+        const weight = source.weight;
+        return {
+            steps: Number(source.steps) || 0,
+            habit: Boolean(source.habit),
+            workout: Array.isArray(source.workout)
+                ? source.workout
+                    .filter(exercise => exercise && exercise.name)
+                    .map(exercise => ({ name: exercise.name, reps: Number(exercise.reps) || 0 }))
+                : [],
+            weight: weight === null || weight === undefined || weight === '' ? null : Number(weight),
+            water: Number(source.water) || 0,
+            last_updated: Number(source.last_updated) || 0,
+            sync_meta: this.normalizeSyncMeta(source)
+        };
+    },
+
+    normalizeSyncMeta(record) {
+        const source = record && typeof record === 'object' ? record : {};
+        const syncMeta = source.sync_meta && typeof source.sync_meta === 'object' ? source.sync_meta : {};
+        const fallback = Number(source.last_updated) || 0;
+
+        return {
+            steps: syncMeta.steps === undefined || syncMeta.steps === null ? fallback : Number(syncMeta.steps),
+            habit: syncMeta.habit === undefined || syncMeta.habit === null ? fallback : Number(syncMeta.habit),
+            workout: syncMeta.workout === undefined || syncMeta.workout === null ? fallback : Number(syncMeta.workout),
+            weight: syncMeta.weight === undefined || syncMeta.weight === null ? fallback : Number(syncMeta.weight),
+            water: syncMeta.water === undefined || syncMeta.water === null ? fallback : Number(syncMeta.water)
+        };
+    },
+
+    ensureHistoryRecord(data, date) {
+        if (!data.history[date]) {
+            data.history[date] = {
+                steps: 0,
+                habit: false,
+                workout: [],
+                weight: null,
+                water: 0,
+                last_updated: 0,
+                sync_meta: {}
+            };
+        }
+
+        data.history[date] = this.normalizeHistoryRecord(data.history[date]);
+        return data.history[date];
+    },
+
+    touchHistoryField(record, field, timestamp = Date.now()) {
+        if (!record.sync_meta || typeof record.sync_meta !== 'object') {
+            record.sync_meta = {};
+        }
+
+        record.sync_meta[field] = timestamp;
+        record.last_updated = Math.max(Number(record.last_updated) || 0, timestamp);
+    },
+
+    pickLatestValue(localValue, serverValue, localTime, serverTime) {
+        const localDefined = localValue !== null && localValue !== undefined;
+        const serverDefined = serverValue !== null && serverValue !== undefined;
+
+        if (!localDefined) return serverValue;
+        if (!serverDefined) return localValue;
+        if (localTime > serverTime) return localValue;
+        if (serverTime > localTime) return serverValue;
+        return localValue;
+    },
+
+    async getData(options = {}) {
+        const { fallbackToLocal = true } = options;
+
         try {
             const res = await fetch(`${this.API_URL}/data`);
             if (!res.ok) throw new Error("API error");
-            return await res.json();
+            return this.normalizeData(await res.json());
         } catch (e) {
+            if (!fallbackToLocal) throw e;
+
+            console.warn('Fetch from server failed, using local data', e);
             const local = localStorage.getItem('doformy_data');
-            return local ? JSON.parse(local) : this.getInitialData();
+            return this.normalizeData(local ? JSON.parse(local) : this.getInitialData());
         }
     },
 
-    async saveData(data) {
-        const currentLevel = [...this.LEVELS].reverse().find(l => data.user.exp >= l.minExp);
-        data.user.levelName = currentLevel.name;
-        localStorage.setItem('doformy_data', JSON.stringify(data));
-        try {
-            await fetch(`${this.API_URL}/save`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-        } catch (e) { console.warn('Sync failed'); }
+    async saveData(data, syncToServer = true, strictServerSync = false) {
+        const normalizedData = this.normalizeData(data);
+
+        const currentLevel = [...this.LEVELS].reverse().find(level => normalizedData.user.exp >= level.minExp) || this.LEVELS[0];
+        normalizedData.user.levelName = currentLevel.name;
+
+        localStorage.setItem('doformy_data', JSON.stringify(normalizedData));
+
+        if (syncToServer && this.API_URL) {
+            try {
+                const res = await fetch(`${this.API_URL}/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(normalizedData)
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Server save failed: ${res.status}`);
+                }
+            } catch (e) {
+                console.warn('Sync to server failed (offline?)', e);
+                if (strictServerSync) throw e;
+            }
+        }
+
+        return normalizedData;
+    },
+
+    _syncTimeout: null,
+    autoSync(data, callback) {
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        this._syncTimeout = setTimeout(async () => {
+            console.log('DoFormy: Spúšťam automatickú synchronizáciu...');
+            const newData = await this.syncData(data);
+            if (callback) callback(newData);
+        }, 2000);
     },
 
     async syncData(localData) {
-        const serverData = await this.getData();
-        
-        const merged = this.mergeData(localData, serverData);
-        
-        localStorage.setItem('doformy_data', JSON.stringify(merged));
-        
-        try {
-            await fetch(`${this.API_URL}/save`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(merged)
-            });
-        } catch (e) { console.warn('Sync save failed'); }
-        
-        return merged;
+        const normalizedLocal = this.normalizeData(localData);
+        const serverData = await this.getData({ fallbackToLocal: false });
+        const merged = this.mergeData(normalizedLocal, serverData);
+        return await this.saveData(merged, true, true);
     },
 
     mergeData(localData, serverData) {
+        if (!serverData || !serverData.user) return this.normalizeData(localData);
+        if (!localData || !localData.user) return this.normalizeData(serverData);
+
+        const normalizedLocal = this.normalizeData(localData);
+        const normalizedServer = this.normalizeData(serverData);
         const merged = {
-            user: localData.user.exp >= serverData.user.exp ? localData.user : serverData.user,
-            history: { ...serverData.history }
+            user: this.mergeUser(normalizedLocal.user, normalizedServer.user),
+            history: {}
         };
-        
-        for (const date in localData.history) {
-            const localRec = localData.history[date];
-            const serverRec = serverData.history[date];
-            
-            if (!serverRec) {
-                merged.history[date] = localRec;
-            } else {
-                merged.history[date] = this.mergeDayRecord(localRec, serverRec);
-            }
+
+        const allDates = new Set([
+            ...Object.keys(normalizedLocal.history),
+            ...Object.keys(normalizedServer.history)
+        ]);
+
+        for (const date of allDates) {
+            merged.history[date] = this.mergeDayRecord(
+                normalizedLocal.history[date],
+                normalizedServer.history[date]
+            );
         }
-        
+
         return merged;
     },
 
-    mergeDayRecord(local, server) {
+    mergeUser(localUser, serverUser) {
+        const localExp = Number(localUser.exp) || 0;
+        const serverExp = Number(serverUser.exp) || 0;
+
         return {
-            steps: (local.steps || 0) + (server.steps || 0),
-            habit: local.habit || server.habit,
-            workout: this.mergeWorkout(local.workout, server.workout),
-            weight: local.weight || server.weight,
-            water: Math.max(local.water || 0, server.water || 0)
+            ...(serverUser.id ? { id: serverUser.id } : {}),
+            exp: Math.max(localExp, serverExp),
+            levelName: (localExp >= serverExp ? localUser.levelName : serverUser.levelName) || this.LEVELS[0].name,
+            stepsGoal: localUser.stepsGoal ?? serverUser.stepsGoal ?? 6000,
+            startDate: localUser.startDate || serverUser.startDate || new Date().toISOString()
+        };
+    },
+
+    mergeDayRecord(local, server) {
+        if (!server) return this.normalizeHistoryRecord(local);
+        if (!local) return this.normalizeHistoryRecord(server);
+
+        const normalizedLocal = this.normalizeHistoryRecord(local);
+        const normalizedServer = this.normalizeHistoryRecord(server);
+        const localMeta = normalizedLocal.sync_meta;
+        const serverMeta = normalizedServer.sync_meta;
+
+        return {
+            steps: Math.max(normalizedLocal.steps || 0, normalizedServer.steps || 0),
+            habit: normalizedLocal.habit || normalizedServer.habit,
+            workout: this.mergeWorkout(normalizedLocal.workout, normalizedServer.workout),
+            weight: this.pickLatestValue(
+                normalizedLocal.weight,
+                normalizedServer.weight,
+                localMeta.weight,
+                serverMeta.weight
+            ),
+            water: this.pickLatestValue(
+                normalizedLocal.water,
+                normalizedServer.water,
+                localMeta.water,
+                serverMeta.water
+            ),
+            last_updated: Math.max(
+                normalizedLocal.last_updated || 0,
+                normalizedServer.last_updated || 0,
+                localMeta.steps,
+                localMeta.habit,
+                localMeta.workout,
+                localMeta.weight,
+                localMeta.water,
+                serverMeta.steps,
+                serverMeta.habit,
+                serverMeta.workout,
+                serverMeta.weight,
+                serverMeta.water
+            ),
+            sync_meta: {
+                steps: Math.max(localMeta.steps, serverMeta.steps),
+                habit: Math.max(localMeta.habit, serverMeta.habit),
+                workout: Math.max(localMeta.workout, serverMeta.workout),
+                weight: Math.max(localMeta.weight, serverMeta.weight),
+                water: Math.max(localMeta.water, serverMeta.water)
+            }
         };
     },
 
     mergeWorkout(localWorkout, serverWorkout) {
-        if (!localWorkout || localWorkout.length === 0) return serverWorkout;
-        if (!serverWorkout || serverWorkout.length === 0) return localWorkout;
-        
+        if (!localWorkout || localWorkout.length === 0) return serverWorkout || [];
+        if (!serverWorkout || serverWorkout.length === 0) return localWorkout || [];
+
         const merged = [...serverWorkout];
-        
+
         for (const localEx of localWorkout) {
-            const idx = merged.findIndex(m => m.name === localEx.name);
+            const idx = merged.findIndex(item => item.name === localEx.name);
             if (idx >= 0) {
                 merged[idx].reps = Math.max(merged[idx].reps || 0, localEx.reps || 0);
             } else {
                 merged.push(localEx);
             }
         }
-        
+
         return merged;
     },
 
     getInitialData() {
-        return {
+        return this.normalizeData({
             user: { exp: 0, levelName: 'Fáza 1: Základy', stepsGoal: 6000, startDate: new Date().toISOString() },
-            history: {} 
-        };
+            history: {}
+        });
     },
 
     getWorkoutForDay(date, levelName) {
         const day = date.getDay();
-        const workoutDays = [1, 3, 5]; // Po, St, Pi
+        const workoutDays = [1, 3, 5];
         const config = this.WORKOUT_DATABASE[levelName] || this.WORKOUT_DATABASE['Fáza 1: Základy'];
-        
+
         if (workoutDays.includes(day)) {
             return {
                 title: `${levelName} (Tréning)`,
@@ -190,7 +358,7 @@ export const DoFormyEngine = {
         const start = new Date(startDate);
         const now = new Date();
         const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-        
+
         const phases = [
             { month: 0, name: 'Fáza 1: Základy' },
             { month: 3, name: 'Fáza 2: Prvá záťaž' },
@@ -198,7 +366,7 @@ export const DoFormyEngine = {
             { month: 9, name: 'Fáza 4: Kontrola (TUT)' },
             { month: 12, name: 'Fáza 5: Elita' }
         ];
-        
+
         for (let i = phases.length - 1; i >= 0; i--) {
             if (months >= phases[i].month) return phases[i].name;
         }
@@ -212,14 +380,14 @@ export const DoFormyEngine = {
 
     getTodayWorkout(data) {
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = this.getTodayStr();
         const stats = data.history[todayStr] || {};
         const levelName = data.user.levelName || 'Fáza 1: Základy';
-        
+
         const day = today.getDay();
         const workoutDays = [1, 3, 5];
         const config = this.WORKOUT_DATABASE[levelName] || this.WORKOUT_DATABASE['Fáza 1: Základy'];
-        
+
         if (workoutDays.includes(day)) {
             return {
                 title: `${levelName} (Tréning)`,
@@ -239,24 +407,66 @@ export const DoFormyEngine = {
     },
 
     logWeight(data, date, weight) {
-        if (!data.history[date]) {
-            data.history[date] = { steps: 0, habit: false, workout: [], weight: null, water: 0 };
+        const record = this.ensureHistoryRecord(data, date);
+        record.weight = parseFloat(weight);
+        this.touchHistoryField(record, 'weight');
+        return data;
+    },
+
+    logWater(data, date, amount, reset = false) {
+        const record = this.ensureHistoryRecord(data, date);
+
+        if (reset) {
+            record.water = 0;
+        } else {
+            record.water = (record.water || 0) + amount;
         }
-        data.history[date].weight = parseFloat(weight);
+
+        this.touchHistoryField(record, 'water');
+        return data;
+    },
+
+    logSteps(data, date, steps) {
+        const record = this.ensureHistoryRecord(data, date);
+        record.steps = (record.steps || 0) + steps;
+        this.touchHistoryField(record, 'steps');
+        return data;
+    },
+
+    logHabit(data, date) {
+        const record = this.ensureHistoryRecord(data, date);
+        record.habit = true;
+        this.touchHistoryField(record, 'habit');
+        data.user.exp += 10;
+        return data;
+    },
+
+    logWorkoutEntry(data, date, name, reps) {
+        const record = this.ensureHistoryRecord(data, date);
+        const nextReps = Number(reps) || 0;
+        const existingIdx = record.workout.findIndex(entry => entry.name === name);
+
+        if (existingIdx >= 0) {
+            record.workout[existingIdx].reps = nextReps;
+        } else {
+            record.workout.push({ name, reps: nextReps });
+        }
+
+        this.touchHistoryField(record, 'workout');
         return data;
     },
 
     getWeightHistory(data) {
         const history = [];
         const dates = Object.keys(data.history).sort();
-        
+
         for (const date of dates) {
             const weight = data.history[date]?.weight;
             if (weight) {
                 history.push({ date, weight });
             }
         }
-        
+
         return history.slice(-30);
     },
 
@@ -285,7 +495,7 @@ export const DoFormyEngine = {
 
     scheduleWorkoutNotification(hour = 8) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-        
+
         setInterval(() => {
             const now = new Date();
             if (now.getHours() === hour && now.getMinutes() === 0) {
@@ -300,12 +510,17 @@ export const DoFormyEngine = {
                 }
             }
         }, 60000);
-        
+
         return true;
     },
 
     isWorkoutDay() {
         const day = new Date().getDay();
         return [1, 3, 5].includes(day);
+    },
+
+    getTodayStr() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 };

@@ -284,9 +284,16 @@ header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
     transition: width 0.3s ease;
 }
 
-#desktop-weight-chart {
-    height: 50px;
+.weight-chart-container {
+    height: 70px;
+    position: relative;
+    width: 100%;
     margin-top: 0.5rem;
+}
+
+#desktop-weight-chart {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .water-buttons {
@@ -340,4 +347,31 @@ header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
 
 .weight-input:focus {
     border-color: var(--do-primary);
+}
+
+.btn-sync {
+    background: white;
+    border: 2px solid #E8F8EF;
+    color: var(--do-primary);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.1);
+}
+
+.btn-sync:hover {
+    transform: rotate(180deg) scale(1.1);
+    background: var(--do-primary);
+    color: white;
+    border-color: var(--do-primary);
+}
+
+.btn-sync:active {
+    transform: rotate(180deg) scale(0.95);
 }

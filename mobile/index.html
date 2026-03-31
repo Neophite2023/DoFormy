@@ -7,13 +7,17 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2ECC71">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
+    <!-- chart.js is intentionally not loaded on mobile for faster cold start -->
 </head>
 <body>
     <div id="do-app">
         <header>
             <div class="user-info">
-                <span id="user-level" class="badge">Fáza 1: Adaptácia</span>
+                <span id="user-level" class="badge">Fáza 1</span>
                 <span id="user-exp">0 XP</span>
                 <button id="btn-sync" class="btn-sync" title="Synchronizovať">🔄</button>
             </div>
@@ -21,7 +25,6 @@
         </header>
 
         <main id="cards-container">
-            <!-- Karta Sily (Tréning) -->
             <div id="card-workout" class="do-card">
                 <div class="card-icon">💪</div>
                 <div class="card-body">
@@ -31,7 +34,6 @@
                 <button id="btn-workout" class="btn-do">Hotovo</button>
             </div>
 
-            <!-- Karta Váhy -->
             <div id="card-weight" class="do-card">
                 <div class="card-icon">⚖️</div>
                 <div class="card-body">
@@ -48,7 +50,6 @@
                 </div>
             </div>
 
-            <!-- Karta Vody -->
             <div id="card-water" class="do-card">
                 <div class="card-icon">💧</div>
                 <div class="card-body">
@@ -64,9 +65,8 @@
                 </div>
             </div>
 
-            <!-- Karta Pohybu -->
             <div id="card-steps" class="do-card">
-                <div class="card-icon">👣</div>
+                <div class="card-icon">👟</div>
                 <div class="card-body">
                     <h3>Karta Pohybu</h3>
                     <div class="progress-info">
@@ -76,7 +76,6 @@
                 <button id="btn-steps" class="btn-do">Pridať</button>
             </div>
 
-            <!-- Karta Návyku -->
             <div id="card-habit" class="do-card">
                 <div class="card-icon">🌱</div>
                 <div class="card-body">
@@ -93,10 +92,9 @@
         </nav>
     </div>
 
-    <!-- Settings View -->
     <div id="view-settings" class="view-settings" style="display: none;">
         <h2>Nastavenia</h2>
-        
+
         <div class="do-card">
             <div class="card-body">
                 <h3>Server URL</h3>

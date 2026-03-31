@@ -22,7 +22,7 @@
                 <button class="nav-item btn-quit" id="btn-quit">Ukončiť DoFormy</button>
             </nav>
             <div class="user-status">
-                <p id="user-level-name">Fáza 1: Adaptácia</p>
+                <p id="user-level-name">Fáza 1: Základy</p>
                 <div class="exp-bar-bg">
                     <div id="exp-bar-fill" style="width: 0%"></div>
                 </div>
@@ -32,8 +32,13 @@
 
         <main class="main-content">
             <header>
-                <h1 id="main-title">Cesta rastu</h1>
-                <p id="current-date">--.--.----</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h1 id="main-title">Cesta rastu</h1>
+                        <p id="current-date">--.--.----</p>
+                    </div>
+                    <button id="btn-sync" class="btn-sync" title="Synchronizovať">🔄</button>
+                </div>
             </header>
 
             <div id="view-dashboard" class="view-section">
@@ -61,7 +66,9 @@
                                 <input type="number" id="desktop-weight-input" placeholder="kg" step="0.1" class="weight-input">
                                 <button id="btn-desktop-weight-save" class="btn-widget">Uložiť</button>
                             </div>
-                            <canvas id="desktop-weight-chart"></canvas>
+                            <div class="weight-chart-container">
+                                <canvas id="desktop-weight-chart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -83,7 +90,7 @@
 
             <div id="view-workout-plan" class="view-section" style="display: none;">
                 <section class="plan-details">
-                    <h3>Váš 1-ročný plán (15kg Jednoručky)</h3>
+                    <h3>Váš 1-ročný plán (15kg jednoručky)</h3>
                     <div id="full-plan-container">
                         <!-- Dynamicky generovaný ročný plán -->
                     </div>
