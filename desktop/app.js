@@ -276,16 +276,6 @@ function renderTodayWidgets(todayStr, stats) {
         }
     };
 
-    document.getElementById('btn-desktop-water-reset').onclick = async () => {
-        try {
-            await syncDesktopChange(() => {
-                DoFormyEngine.logWater(currentData, todayStr, 0, true);
-            });
-        } catch (e) {
-            console.error('Desktop water reset sync failed', e);
-        }
-    };
-
     const btnSaveWeight = document.getElementById('btn-desktop-weight-save');
     btnSaveWeight.onclick = async () => {
         const newWeight = parseFloat(weightInput.value);

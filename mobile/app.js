@@ -229,12 +229,6 @@ function renderWaterCard(todayStr, stats) {
         currentData = await DoFormyEngine.saveData(currentData, false);
         initUI(currentData);
     };
-
-    document.getElementById('btn-water-reset').onclick = async () => {
-        DoFormyEngine.logWater(currentData, todayStr, 0, true);
-        currentData = await DoFormyEngine.saveData(currentData, false);
-        initUI(currentData);
-    };
 }
 
 function renderStepsCard(todayStr, stats) {
