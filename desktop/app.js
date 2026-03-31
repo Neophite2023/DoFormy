@@ -2,6 +2,34 @@ import { DoFormyEngine } from '../shared/engine.js';
 
 let currentData = null;
 
+async function bootstrapDesktopData() {
+    const localRaw = localStorage.getItem('doformy_data');
+    const localData = localRaw ? JSON.parse(localRaw) : null;
+
+    try {
+        const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
+        const normalizedServer = DoFormyEngine.normalizeData(serverData);
+        const normalizedLocal = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
+
+        const serverHistoryEmpty = Object.keys(normalizedServer.history || {}).length === 0;
+        const localHistoryNonEmpty = Object.keys(normalizedLocal.history || {}).length > 0;
+
+        if (serverHistoryEmpty && localHistoryNonEmpty) {
+            // Server DB was reset; prevent desktop from re-uploading old local test data.
+            localStorage.removeItem('doformy_data');
+            localStorage.setItem('doformy_data', JSON.stringify(normalizedServer));
+            return normalizedServer;
+        }
+
+        const merged = DoFormyEngine.mergeData(normalizedLocal, normalizedServer);
+        localStorage.setItem('doformy_data', JSON.stringify(merged));
+        return merged;
+    } catch (e) {
+        // Offline: keep local (or initial) data.
+        return localData ? DoFormyEngine.normalizeData(localData) : DoFormyEngine.getInitialData();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DoFormy: Desktop inicializácia...');
     initDesktop();
@@ -9,8 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initDesktop() {
     try {
-        const local = localStorage.getItem('doformy_data');
-        currentData = local ? JSON.parse(local) : DoFormyEngine.getInitialData();
+        currentData = await bootstrapDesktopData();
 
         refreshUI();
 
