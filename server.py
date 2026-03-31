@@ -6,7 +6,6 @@ import ssl
 import threading
 import time
 import webbrowser
-from datetime import datetime, timezone
 
 PORT = 8000
 DB_FILE = "doformy.db"
@@ -15,11 +14,7 @@ URL = f"https://{HOST_NAME}:{PORT}/desktop/index.html"
 
 DEFAULT_LEVEL_NAME = "F\u00e1za 1: Z\u00e1klady"
 LEGACY_LEVEL_NAME = "F\u00e1za 1: Adapt\u00e1cia"
-
-
-def default_start_date():
-    # Use a real "now" for fresh installs/resets so phases start from the new beginning.
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+DEFAULT_START_DATE = "2023-10-27T12:00:00.000Z"
 
 
 def normalize_sync_meta(record):
@@ -166,7 +161,7 @@ def merge_user(existing_user, incoming_user):
         "exp": max(existing_exp, incoming_exp),
         "levelName": incoming_level_name if incoming_exp >= existing_exp else existing_level_name or incoming_level_name or DEFAULT_LEVEL_NAME,
         "stepsGoal": int(incoming.get("stepsGoal") or existing.get("stepsGoal") or 6000),
-        "startDate": incoming.get("startDate") or existing.get("startDate") or default_start_date(),
+        "startDate": incoming.get("startDate") or existing.get("startDate") or DEFAULT_START_DATE,
     }
 
 
@@ -221,10 +216,9 @@ def init_db():
 
     cursor.execute("SELECT COUNT(*) FROM user")
     if cursor.fetchone()[0] == 0:
-        start_date = default_start_date()
         cursor.execute(
             "INSERT INTO user (exp, levelName, stepsGoal, startDate) VALUES (?, ?, ?, ?)",
-            (0, DEFAULT_LEVEL_NAME, 6000, start_date),
+            (0, DEFAULT_LEVEL_NAME, 6000, DEFAULT_START_DATE),
         )
 
     for statement in [
@@ -275,7 +269,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 "exp": 0,
                 "levelName": DEFAULT_LEVEL_NAME,
                 "stepsGoal": 6000,
-                "startDate": default_start_date(),
+                "startDate": DEFAULT_START_DATE,
             }
 
             cursor.execute("SELECT * FROM history")

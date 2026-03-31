@@ -104,16 +104,6 @@ function initSettings() {
             alert('Chyba: ' + e.message);
         }
     };
-
-    const btnReset = document.getElementById('btn-reset-local');
-    if (btnReset) {
-        btnReset.onclick = () => {
-            if (confirm('Naozaj chcete vymazať lokálne dáta v mobile?')) {
-                localStorage.removeItem('doformy_data');
-                location.reload();
-            }
-        };
-    }
 }
 
 async function initNotifications() {
