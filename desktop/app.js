@@ -4,7 +4,14 @@ let currentData = null;
 
 async function bootstrapDesktopData() {
     const localRaw = localStorage.getItem('doformy_data');
-    const localData = localRaw ? JSON.parse(localRaw) : null;
+    let localData = null;
+    if (localRaw) {
+        try {
+            localData = JSON.parse(localRaw);
+        } catch (e) {
+            localData = null;
+        }
+    }
 
     try {
         const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
