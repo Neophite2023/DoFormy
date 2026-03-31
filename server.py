@@ -350,6 +350,23 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
 
             cursor.execute("SELECT * FROM user WHERE id = 1")
             existing_user_row = cursor.fetchone()
+
+            existing_reset = 0
+            if existing_user_row and "resetVersion" in existing_user_row.keys():
+                try:
+                    existing_reset = int(existing_user_row["resetVersion"] or 0)
+                except (TypeError, ValueError):
+                    existing_reset = 0
+
+            try:
+                incoming_reset = int(incoming_user.get("resetVersion") or 0)
+            except (TypeError, ValueError):
+                incoming_reset = 0
+
+            # If server has been reset and a stale client tries to upload old history, ignore it.
+            if incoming_reset < existing_reset:
+                incoming_history = {}
+
             merged_user = merge_user(dict(existing_user_row) if existing_user_row else None, incoming_user)
             cursor.execute(
                 "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ?, resetVersion = ? WHERE id = 1",
