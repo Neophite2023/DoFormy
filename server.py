@@ -156,12 +156,17 @@ def merge_user(existing_user, incoming_user):
     incoming_exp = int(incoming.get("exp") or 0)
     incoming_level_name = incoming.get("levelName")
     existing_level_name = existing.get("levelName")
+    existing_reset = int(existing.get("resetVersion") or 0)
+    incoming_reset = int(incoming.get("resetVersion") or 0)
 
     return {
         "exp": max(existing_exp, incoming_exp),
         "levelName": incoming_level_name if incoming_exp >= existing_exp else existing_level_name or incoming_level_name or DEFAULT_LEVEL_NAME,
         "stepsGoal": int(incoming.get("stepsGoal") or existing.get("stepsGoal") or 6000),
-        "startDate": incoming.get("startDate") or existing.get("startDate") or DEFAULT_START_DATE,
+        # startDate is server-controlled once initialized (avoid clients overwriting it during sync)
+        "startDate": existing.get("startDate") or incoming.get("startDate") or DEFAULT_START_DATE,
+        # resetVersion is monotonic; server uses it to signal clients to drop local test data after a reset.
+        "resetVersion": max(existing_reset, incoming_reset),
     }
 
 
@@ -195,7 +200,8 @@ def init_db():
             exp INTEGER,
             levelName TEXT,
             stepsGoal INTEGER,
-            startDate TEXT
+            startDate TEXT,
+            resetVersion INTEGER DEFAULT 0
         )
         """
     )
@@ -217,9 +223,17 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM user")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
-            "INSERT INTO user (exp, levelName, stepsGoal, startDate) VALUES (?, ?, ?, ?)",
-            (0, DEFAULT_LEVEL_NAME, 6000, DEFAULT_START_DATE),
+            "INSERT INTO user (exp, levelName, stepsGoal, startDate, resetVersion) VALUES (?, ?, ?, ?, ?)",
+            (0, DEFAULT_LEVEL_NAME, 6000, DEFAULT_START_DATE, 0),
         )
+
+    for statement in [
+        "ALTER TABLE user ADD COLUMN resetVersion INTEGER DEFAULT 0",
+    ]:
+        try:
+            cursor.execute(statement)
+        except sqlite3.OperationalError:
+            pass
 
     for statement in [
         "ALTER TABLE history ADD COLUMN weight REAL",
@@ -270,6 +284,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 "levelName": DEFAULT_LEVEL_NAME,
                 "stepsGoal": 6000,
                 "startDate": DEFAULT_START_DATE,
+                "resetVersion": 0,
             }
 
             cursor.execute("SELECT * FROM history")
@@ -337,12 +352,13 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             existing_user_row = cursor.fetchone()
             merged_user = merge_user(dict(existing_user_row) if existing_user_row else None, incoming_user)
             cursor.execute(
-                "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ? WHERE id = 1",
+                "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ?, resetVersion = ? WHERE id = 1",
                 (
                     merged_user["exp"],
                     merged_user["levelName"],
                     merged_user["stepsGoal"],
                     merged_user["startDate"],
+                    merged_user["resetVersion"],
                 ),
             )
 

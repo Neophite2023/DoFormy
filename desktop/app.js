@@ -18,10 +18,10 @@ async function bootstrapDesktopData() {
         const normalizedServer = DoFormyEngine.normalizeData(serverData);
         const normalizedLocal = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
 
-        const serverHistoryEmpty = Object.keys(normalizedServer.history || {}).length === 0;
-        const localHistoryNonEmpty = Object.keys(normalizedLocal.history || {}).length > 0;
+        const serverReset = Number(normalizedServer.user.resetVersion) || 0;
+        const localReset = Number(normalizedLocal.user.resetVersion) || 0;
 
-        if (serverHistoryEmpty && localHistoryNonEmpty) {
+        if (serverReset > localReset) {
             // Server DB was reset; prevent desktop from re-uploading old local test data.
             localStorage.removeItem('doformy_data');
             localStorage.setItem('doformy_data', JSON.stringify(normalizedServer));

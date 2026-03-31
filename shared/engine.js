@@ -90,6 +90,7 @@ export const DoFormyEngine = {
                 levelName: user.levelName || this.LEVELS[0].name,
                 stepsGoal: Number(user.stepsGoal) || 6000,
                 startDate: user.startDate || new Date().toISOString(),
+                resetVersion: Number(user.resetVersion) || 0,
                 ...(user.id ? { id: user.id } : {})
             },
             history: normalizedHistory
@@ -222,7 +223,17 @@ export const DoFormyEngine = {
     async syncData(localData) {
         const normalizedLocal = this.normalizeData(localData);
         const serverData = await this.getData({ fallbackToLocal: false });
-        const merged = this.mergeData(normalizedLocal, serverData);
+        const normalizedServer = this.normalizeData(serverData);
+
+        const localReset = Number(normalizedLocal.user.resetVersion) || 0;
+        const serverReset = Number(normalizedServer.user.resetVersion) || 0;
+
+        if (serverReset > localReset) {
+            // Server signaled a reset; drop local test data so clients cannot repopulate the DB.
+            return await this.saveData(normalizedServer, false);
+        }
+
+        const merged = this.mergeData(normalizedLocal, normalizedServer);
         return await this.saveData(merged, true, true);
     },
 
@@ -255,13 +266,17 @@ export const DoFormyEngine = {
     mergeUser(localUser, serverUser) {
         const localExp = Number(localUser.exp) || 0;
         const serverExp = Number(serverUser.exp) || 0;
+        const localReset = Number(localUser.resetVersion) || 0;
+        const serverReset = Number(serverUser.resetVersion) || 0;
 
         return {
             ...(serverUser.id ? { id: serverUser.id } : {}),
             exp: Math.max(localExp, serverExp),
             levelName: (localExp >= serverExp ? localUser.levelName : serverUser.levelName) || this.LEVELS[0].name,
             stepsGoal: localUser.stepsGoal ?? serverUser.stepsGoal ?? 6000,
-            startDate: localUser.startDate || serverUser.startDate || new Date().toISOString()
+            // startDate should follow server when available.
+            startDate: serverUser.startDate || localUser.startDate || new Date().toISOString(),
+            resetVersion: Math.max(localReset, serverReset)
         };
     },
 
