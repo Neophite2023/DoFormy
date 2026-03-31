@@ -2,9 +2,42 @@ import { DoFormyEngine } from '../shared/engine.js';
 
 let currentData = null;
 
+async function bootstrapMobileData() {
+    const localRaw = localStorage.getItem('doformy_data');
+    let localData = null;
+
+    if (localRaw) {
+        try {
+            localData = JSON.parse(localRaw);
+        } catch (e) {
+            localData = null;
+        }
+    }
+
+    const normalizedLocal = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
+
+    try {
+        const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
+        const normalizedServer = DoFormyEngine.normalizeData(serverData);
+
+        const localReset = Number(normalizedLocal.user.resetVersion) || 0;
+        const serverReset = Number(normalizedServer.user.resetVersion) || 0;
+
+        if (serverReset > localReset) {
+            // Server DB was reset; prevent mobile from re-uploading old local test data.
+            localStorage.removeItem('doformy_data');
+            localStorage.setItem('doformy_data', JSON.stringify(normalizedServer));
+            return normalizedServer;
+        }
+    } catch (e) {
+        // Offline or server not reachable: keep local (or initial) data.
+    }
+
+    return normalizedLocal;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const local = localStorage.getItem('doformy_data');
-    currentData = local ? JSON.parse(local) : DoFormyEngine.getInitialData();
+    currentData = await bootstrapMobileData();
 
     initUI(currentData);
     initSettings();
