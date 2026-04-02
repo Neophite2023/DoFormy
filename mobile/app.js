@@ -1,5 +1,42 @@
 import { DoFormyEngine } from '../shared/engine.js';
 
+const THEME_STORAGE_KEY = 'doformy_theme';
+const THEME_COLOR_LIGHT = '#2ECC71';
+const THEME_COLOR_DARK = '#0B1220';
+
+function setMetaThemeColor(theme) {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    meta.setAttribute('content', theme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+}
+
+function applyTheme(theme) {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = nextTheme;
+    setMetaThemeColor(nextTheme);
+    return nextTheme;
+}
+
+function initTheme() {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') {
+        return applyTheme(saved);
+    }
+
+    const prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const initial = prefersDark ? 'dark' : 'light';
+    localStorage.setItem(THEME_STORAGE_KEY, initial);
+    return applyTheme(initial);
+}
+
+function setTheme(theme) {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    applyTheme(nextTheme);
+}
+
+initTheme();
+
 let currentData = null;
 
 async function bootstrapMobileData() {
@@ -115,22 +152,31 @@ function initSettings() {
     const apiInput = document.getElementById('api-url-input');
     const currentApiUrl = document.getElementById('current-api-url');
 
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        const currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+        themeToggle.checked = currentTheme === 'dark';
+        themeToggle.onchange = () => {
+            setTheme(themeToggle.checked ? 'dark' : 'light');
+        };
+    }
+
     const savedUrl = localStorage.getItem('doformy_api_url') || '';
-    apiInput.value = savedUrl;
-    currentApiUrl.textContent = `Aktuálne: ${savedUrl || 'http://localhost:8000/api'}`;
+    if (apiInput) apiInput.value = savedUrl;
+    if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${savedUrl || 'http://localhost:8000/api'}`;
 
     document.getElementById('btn-save-api').onclick = () => {
-        let url = apiInput.value.trim();
+        let url = (apiInput ? apiInput.value : '').trim();
         if (url) {
             if (!url.endsWith('/api')) url += '/api';
             localStorage.setItem('doformy_api_url', url);
             DoFormyEngine.setApiUrl(url);
-            currentApiUrl.textContent = `Aktuálne: ${url}`;
+            if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${url}`;
             alert('URL uložená.');
         } else {
             localStorage.removeItem('doformy_api_url');
             DoFormyEngine.setApiUrl('http://localhost:8000/api');
-            currentApiUrl.textContent = 'Aktuálne: http://localhost:8000/api';
+            if (currentApiUrl) currentApiUrl.textContent = 'Aktuálne: http://localhost:8000/api';
             alert('URL resetovaná.');
         }
     };

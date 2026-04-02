@@ -14,6 +14,42 @@
     <!-- chart.js is intentionally not loaded on mobile for faster cold start -->
 </head>
 <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+        <symbol id="i-home" viewBox="0 0 24 24">
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 10v11h5v-6h4v6h5V10" />
+        </symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+            <path d="M19.4 15a8 8 0 0 0 .1-1l2-1.2-2-3.5-2.3.6a7.3 7.3 0 0 0-1.7-1L15 6h-6l-.5 2a7.3 7.3 0 0 0-1.7 1L4.5 8.3l-2 3.5 2 1.2a8 8 0 0 0 .1 1 8 8 0 0 0-.1 1l-2 1.2 2 3.5 2.3-.6a7.3 7.3 0 0 0 1.7 1L9 22h6l.5-2a7.3 7.3 0 0 0 1.7-1l2.3.6 2-3.5-2-1.2a8 8 0 0 0-.1-1z" />
+        </symbol>
+        <symbol id="i-sync" viewBox="0 0 24 24">
+            <path d="M21 12a9 9 0 0 1-15.7 6.1" />
+            <path d="M3 12a9 9 0 0 1 15.7-6.1" />
+            <path d="M16 5h3V2" />
+            <path d="M8 19H5v3" />
+        </symbol>
+        <symbol id="i-activity" viewBox="0 0 24 24">
+            <path d="M4 13h3l2-6 4 12 2-6h5" />
+        </symbol>
+        <symbol id="i-scale" viewBox="0 0 24 24">
+            <path d="M6 4h12a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2z" />
+            <path d="M8 9a4 4 0 0 1 8 0" />
+            <path d="M12 9v3" />
+        </symbol>
+        <symbol id="i-droplet" viewBox="0 0 24 24">
+            <path d="M12 2s7 7.4 7 13a7 7 0 0 1-14 0c0-5.6 7-13 7-13z" />
+        </symbol>
+        <symbol id="i-footsteps" viewBox="0 0 24 24">
+            <path d="M8.5 6.5c1.4 0 2.5 1.2 2.5 2.8 0 1.9-1.2 3.2-2.8 3.2-1.6 0-2.7-1.3-2.7-3.1 0-1.7 1.2-2.9 3-2.9z" />
+            <path d="M15.5 11c1.3 0 2.4 1.1 2.4 2.6 0 1.8-1.1 3-2.6 3-1.5 0-2.5-1.2-2.5-2.9 0-1.6 1.1-2.7 2.7-2.7z" />
+        </symbol>
+        <symbol id="i-leaf" viewBox="0 0 24 24">
+            <path d="M20 4c-7 0-12 4-12 12 0 2.5 1 4.5 2.5 6C18 22 22 17 22 10c0-2.5-1-4.5-2-6z" />
+            <path d="M9 15c3-1 6-4 7-7" />
+        </symbol>
+    </svg>
+
     <div id="do-app">
         <header>
             <div class="user-info">
@@ -23,11 +59,23 @@
             <h1>Dnes</h1>
         </header>
 
-        <button id="btn-sync" class="btn-sync">Synchronizovať</button>
+        <button id="btn-sync" class="btn-sync" type="button">
+            <span class="btn-sync-main">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#i-sync" xlink:href="#i-sync"></use>
+                </svg>
+                <span class="btn-sync-label">Synchronizovať</span>
+            </span>
+            <span class="btn-sync-spinner" aria-hidden="true"></span>
+        </button>
 
         <main id="cards-container">
             <div id="card-workout" class="do-card">
-                <div class="card-icon">💪</div>
+                <div class="icon-badge badge-workout" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-activity" xlink:href="#i-activity"></use>
+                    </svg>
+                </div>
                 <div class="card-body">
                     <h3>Karta Sily</h3>
                     <p id="workout-desc">Dnes je deň oddychu.</p>
@@ -36,7 +84,11 @@
             </div>
 
             <div id="card-weight" class="do-card">
-                <div class="card-icon">⚖️</div>
+                <div class="icon-badge badge-weight" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-scale" xlink:href="#i-scale"></use>
+                    </svg>
+                </div>
                 <div class="card-body">
                     <h3>Karta Váhy</h3>
                     <p id="weight-val">-- kg</p>
@@ -52,7 +104,11 @@
             </div>
 
             <div id="card-water" class="do-card">
-                <div class="card-icon">💧</div>
+                <div class="icon-badge badge-water" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-droplet" xlink:href="#i-droplet"></use>
+                    </svg>
+                </div>
                 <div class="card-body">
                     <h3>Karta Vody</h3>
                     <p id="water-val">0 / 2500 ml</p>
@@ -67,7 +123,11 @@
             </div>
 
             <div id="card-steps" class="do-card">
-                <div class="card-icon">👟</div>
+                <div class="icon-badge badge-steps" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-footsteps" xlink:href="#i-footsteps"></use>
+                    </svg>
+                </div>
                 <div class="card-body">
                     <h3>Karta Pohybu</h3>
                     <div class="progress-info">
@@ -78,7 +138,11 @@
             </div>
 
             <div id="card-habit" class="do-card">
-                <div class="card-icon">🌱</div>
+                <div class="icon-badge badge-habit" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-leaf" xlink:href="#i-leaf"></use>
+                    </svg>
+                </div>
                 <div class="card-body">
                     <h3>Karta Návyku</h3>
                     <p id="habit-desc">3 min. dýchanie</p>
@@ -88,13 +152,39 @@
         </main>
 
         <nav class="do-nav">
-            <button class="nav-btn active" data-view="home">DoFormy</button>
-            <button class="nav-btn" data-view="settings">Nastavenia</button>
+            <button class="nav-btn active" data-view="home" type="button">
+                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#i-home" xlink:href="#i-home"></use>
+                </svg>
+                <span>DoFormy</span>
+            </button>
+            <button class="nav-btn" data-view="settings" type="button">
+                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#i-settings" xlink:href="#i-settings"></use>
+                </svg>
+                <span>Nastavenia</span>
+            </button>
         </nav>
     </div>
 
     <div id="view-settings" class="view-settings" style="display: none;">
         <h2>Nastavenia</h2>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Vzhľad</h3>
+                <div class="setting-row">
+                    <div>
+                        <p class="setting-title">Tmavý režim</p>
+                        <p class="settings-desc">Prepne farby celej aplikácie</p>
+                    </div>
+                    <label class="switch" aria-label="Tmavý režim">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
 
         <div class="do-card">
             <div class="card-body">
