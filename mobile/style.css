@@ -1,5 +1,6 @@
 :root {
     --do-primary: #2ECC71;
+    --do-primary-dark: #28b463;
     --do-bg: #F9FBF9;
     --do-card: #FFFFFF;
     --do-text: #2C3E50;
@@ -46,6 +47,18 @@ header {
     padding: 0.6rem 1.2rem;
     border-radius: 8px;
     transition: background 0.2s;
+}
+
+.btn-sync.syncing {
+    background: #f39c12;
+}
+
+.btn-sync.sync-success {
+    background: #27ae60;
+}
+
+.btn-sync.sync-error {
+    background: #e74c3c;
 }
 
 .btn-sync:hover {

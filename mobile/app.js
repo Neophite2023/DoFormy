@@ -66,18 +66,30 @@ function initSync() {
     const btnSync = document.getElementById('btn-sync');
     if (!btnSync) return;
 
-    const resetButton = () => {
-        btnSync.style.background = '';
+    let resetTimeout = null;
+
+    const setState = (state) => {
+        btnSync.classList.remove('syncing', 'sync-success', 'sync-error');
+        if (state) btnSync.classList.add(state);
+    };
+
+    const scheduleReset = (ms) => {
+        if (resetTimeout) window.clearTimeout(resetTimeout);
+        resetTimeout = window.setTimeout(() => setState(null), ms);
     };
 
     btnSync.onclick = async () => {
-        btnSync.style.background = '#f39c12';
+        if (resetTimeout) window.clearTimeout(resetTimeout);
+        resetTimeout = null;
+        setState('syncing');
+        btnSync.disabled = true;
         
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
             if (!apiUrl) {
-                resetButton();
+                setState(null);
+                btnSync.disabled = false;
                 return;
             }
             if (!apiUrl.endsWith('/api')) apiUrl += '/api';
@@ -88,11 +100,13 @@ function initSync() {
 
         try {
             currentData = await DoFormyEngine.syncNow(currentData);
-            btnSync.style.background = '#27ae60';
-            window.setTimeout(resetButton, 3000);
+            setState('sync-success');
+            scheduleReset(3000);
         } catch (e) {
-            btnSync.style.background = '#e74c3c';
-            window.setTimeout(resetButton, 4000);
+            setState('sync-error');
+            scheduleReset(4000);
+        } finally {
+            btnSync.disabled = false;
         }
     };
 }
