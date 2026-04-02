@@ -1,5 +1,31 @@
 # DoFormy - Progress dokumentácia
 
+## Dátum: 2. apríl 2026
+
+---
+
+## Čo sme vytvorili a opravili
+
+### 1. Redizajn Mobile UI (Minimal Light) + Dark mode
+- **Nový vizuál:** Nové CSS tokeny, modernejšie karty, typografia, tlačidlá a “floating” spodná navigácia.
+- **Ikony:** Emoji nahradené konzistentnými **inline SVG** ikonami (sprite v `mobile/index.html`).
+- **Dark mode:** Prepínač v Nastaveniach (persist do `localStorage` pod kľúčom `doformy_theme`) + aktualizácia `meta[name="theme-color"]`.
+
+### 2. Oprava sync tlačidla na mobile (nezmizne po synchronizácii)
+- **Stavové triedy:** `syncing / sync-success / sync-error` namiesto inline `style`, doplnený spinner.
+- **PWA cache:** Bump Service Worker cache, aby sa nový UI natiahol aj v PWA bez ručného čistenia.
+
+### 3. Fix synchronizácie Mobile → Desktop (server persist)
+- **Root-cause fix:** Endpoint `/api/sync` už po merge **ukladá** zmeny do SQLite (user + history), takže zmeny z mobilu sa reálne objavia na desktope.
+
+### 4. Voda: reset na 0 ml
+- **Tlačidlo „0“:** Pridané na mobile aj desktope, používa `DoFormyEngine.logWater(..., reset=true)`.
+
+### 5. Bugfix Mobile UI: tlačidlo „Uložiť“ (Váha) mimo obrazovku
+- **Responsive fix:** `.weight-input-row` teraz zvláda malé šírky (wrap), takže tlačidlo nepretečie doprava mimo screen.
+
+---
+
 ## Dátum: 30. marec 2026
 
 ---
