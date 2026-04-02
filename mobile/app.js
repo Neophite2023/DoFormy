@@ -64,14 +64,20 @@ function initNavigation() {
 
 function initSync() {
     const btnSync = document.getElementById('btn-sync');
-    if (!btnSync) return;
+    if (!btnSync) {
+        console.log('ERROR: btn-sync not found!');
+        return;
+    }
+    console.log('initSync running, btnSync:', btnSync);
 
     const resetButton = () => {
+        console.log('resetButton called');
         btnSync.style.background = '';
         btnSync.style.color = '';
     };
 
     btnSync.onclick = async () => {
+        console.log('btnSync onclick');
         btnSync.style.background = '#f39c12';
         btnSync.style.color = '#fff';
         
@@ -89,12 +95,15 @@ function initSync() {
         }
 
         try {
+            console.log('syncNow started');
             await DoFormyEngine.syncNow(currentData);
+            console.log('syncNow completed');
             btnSync.style.background = '#27ae60';
-            setTimeout(resetButton, 2000);
+            window.setTimeout(resetButton, 2000);
         } catch (e) {
+            console.log('syncNow failed:', e);
             btnSync.style.background = '#e74c3c';
-            setTimeout(resetButton, 3000);
+            window.setTimeout(resetButton, 3000);
         }
     };
 }
