@@ -66,27 +66,20 @@ function initSync() {
     const btnSync = document.getElementById('btn-sync');
     if (!btnSync) return;
 
-    const originalText = btnSync.textContent;
-    let syncTimeout = null;
-
     const resetButton = () => {
-        if (syncTimeout) {
-            window.clearTimeout(syncTimeout);
-            syncTimeout = null;
-        }
-        btnSync.textContent = originalText;
+        btnSync.style.background = '';
+        btnSync.style.color = '';
     };
 
     btnSync.onclick = async () => {
-        if (syncTimeout) return;
-        
-        btnSync.textContent = '⏳';
+        btnSync.style.background = '#f39c12';
+        btnSync.style.color = '#fff';
         
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
             if (!apiUrl) {
-                btnSync.textContent = originalText;
+                resetButton();
                 return;
             }
             if (!apiUrl.endsWith('/api')) apiUrl += '/api';
@@ -97,11 +90,11 @@ function initSync() {
 
         try {
             await DoFormyEngine.syncNow(currentData);
-            btnSync.textContent = '✓';
-            syncTimeout = window.setTimeout(resetButton, 2000);
+            btnSync.style.background = '#27ae60';
+            setTimeout(resetButton, 2000);
         } catch (e) {
-            btnSync.textContent = '✕';
-            syncTimeout = window.setTimeout(resetButton, 3000);
+            btnSync.style.background = '#e74c3c';
+            setTimeout(resetButton, 3000);
         }
     };
 }
