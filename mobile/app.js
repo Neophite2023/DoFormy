@@ -66,14 +66,27 @@ function initSync() {
     const btnSync = document.getElementById('btn-sync');
     if (!btnSync) return;
 
+    const originalText = btnSync.textContent;
+    let syncTimeout = null;
+
+    const resetButton = () => {
+        if (syncTimeout) {
+            window.clearTimeout(syncTimeout);
+            syncTimeout = null;
+        }
+        btnSync.textContent = originalText;
+    };
+
     btnSync.onclick = async () => {
+        if (syncTimeout) return;
+        
         btnSync.textContent = '⏳';
         
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
             if (!apiUrl) {
-                btnSync.textContent = 'Synchronizovať';
+                btnSync.textContent = originalText;
                 return;
             }
             if (!apiUrl.endsWith('/api')) apiUrl += '/api';
@@ -83,12 +96,12 @@ function initSync() {
         }
 
         try {
-            currentData = await DoFormyEngine.syncNow(currentData);
+            await DoFormyEngine.syncNow(currentData);
             btnSync.textContent = '✓';
-            window.setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 2000);
+            syncTimeout = window.setTimeout(resetButton, 2000);
         } catch (e) {
             btnSync.textContent = '✕';
-            window.setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 3000);
+            syncTimeout = window.setTimeout(resetButton, 3000);
         }
     };
 }
