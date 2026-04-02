@@ -316,6 +316,20 @@ function renderTodayWidgets(todayStr, stats) {
         }
     };
 
+    const btnResetWater = document.getElementById('btn-desktop-water-reset');
+    if (btnResetWater) {
+        btnResetWater.onclick = async () => {
+            if (!confirm('Vynulovať vodu na 0 ml?')) return;
+            try {
+                await syncDesktopChange(() => {
+                    DoFormyEngine.logWater(currentData, todayStr, 0, true);
+                });
+            } catch (e) {
+                console.error('Desktop water reset failed', e);
+            }
+        };
+    }
+
     const btnSaveWeight = document.getElementById('btn-desktop-weight-save');
     btnSaveWeight.onclick = async () => {
         const newWeight = parseFloat(weightInput.value);

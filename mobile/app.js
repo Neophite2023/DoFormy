@@ -279,6 +279,16 @@ function renderWaterCard(todayStr, stats) {
         currentData = await DoFormyEngine.saveData(currentData, false);
         initUI(currentData);
     };
+
+    const btnReset = document.getElementById('btn-water-reset');
+    if (btnReset) {
+        btnReset.onclick = async () => {
+            if (!confirm('Vynulovať vodu na 0 ml?')) return;
+            DoFormyEngine.logWater(currentData, todayStr, 0, true);
+            currentData = await DoFormyEngine.saveData(currentData, false);
+            initUI(currentData);
+        };
+    }
 }
 
 function renderStepsCard(todayStr, stats) {
