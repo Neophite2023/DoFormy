@@ -67,15 +67,13 @@ function initSync() {
     if (!btnSync) return;
 
     btnSync.onclick = async () => {
-        btnSync.textContent = '⏳ Čakám...';
-        btnSync.disabled = true;
+        btnSync.textContent = '⏳';
         
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
             if (!apiUrl) {
                 btnSync.textContent = 'Synchronizovať';
-                btnSync.disabled = false;
                 return;
             }
             if (!apiUrl.endsWith('/api')) apiUrl += '/api';
@@ -86,20 +84,11 @@ function initSync() {
 
         try {
             currentData = await DoFormyEngine.syncNow(currentData);
-            initUI(currentData);
-            btnSync.textContent = '✓ Hotové';
-            setTimeout(() => {
-                btnSync.textContent = 'Synchronizovať';
-                btnSync.disabled = false;
-            }, 1500);
+            btnSync.textContent = '✓';
+            setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 1500);
         } catch (e) {
-            console.error('Mobile sync failed', e);
-            btnSync.textContent = '✕ Chyba';
-            setTimeout(() => {
-                btnSync.textContent = 'Synchronizovať';
-                btnSync.disabled = false;
-            }, 2000);
-            alert('Chyba synchronizácie: ' + e.message);
+            btnSync.textContent = '✕';
+            setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 2000);
         }
     };
 }
