@@ -1,4 +1,4 @@
-const CACHE_NAME = 'doformy-v9';
+const CACHE_NAME = 'doformy-v10';
 const APP_ASSETS = [
     './index.html',
     './style.css',

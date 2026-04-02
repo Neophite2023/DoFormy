@@ -466,11 +466,14 @@ h1 {
     display: flex;
     gap: 8px;
     margin-top: 10px;
+    flex-wrap: wrap;
+    align-items: stretch;
 }
 
 .weight-input,
 .api-input {
     flex: 1;
+    min-width: 0;
     padding: 10px 12px;
     border: 1px solid var(--border);
     background: var(--surface-solid);
@@ -479,6 +482,11 @@ h1 {
     font-weight: 800;
     color: var(--text);
     outline: none;
+}
+
+.weight-input-row .btn-do {
+    flex: 0 0 auto;
+    max-width: 100%;
 }
 
 .weight-input:focus,
