@@ -85,10 +85,10 @@ function initSync() {
         try {
             currentData = await DoFormyEngine.syncNow(currentData);
             btnSync.textContent = '✓';
-            setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 1500);
+            window.setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 2000);
         } catch (e) {
             btnSync.textContent = '✕';
-            setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 2000);
+            window.setTimeout(() => { btnSync.textContent = 'Synchronizovať'; }, 3000);
         }
     };
 }
