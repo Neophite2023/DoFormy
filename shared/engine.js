@@ -252,7 +252,9 @@ export const DoFormyEngine = {
         }
     },
 
-    async syncNow(localData) {
+    async syncNow(localData, options = {}) {
+        const { throwOnError = false } = options;
+
         if (this.isSyncing) {
             console.log('DoFormy: Sync already in progress, skipping');
             return localData;
@@ -260,6 +262,7 @@ export const DoFormyEngine = {
 
         if (!navigator.onLine) {
             this.emitEvent('syncError', { message: 'Offline' });
+            if (throwOnError) throw new Error('Offline');
             return localData;
         }
 
@@ -279,6 +282,7 @@ export const DoFormyEngine = {
 
             if (pushRes.status === 409) {
                 this.emitEvent('syncError', { message: 'Sync conflict' });
+                if (throwOnError) throw new Error('Sync conflict');
                 return localData;
             }
 
@@ -296,7 +300,6 @@ export const DoFormyEngine = {
             const serverReset = Number(normalizedServer.user.resetVersion) || 0;
 
             if (serverReset > localReset) {
-                this.isSyncing = false;
                 this.emitEvent('syncSuccess', { source: 'server' });
                 return await this.saveData(normalizedServer, false);
             }
@@ -314,15 +317,16 @@ export const DoFormyEngine = {
             }
 
             const finalData = await this.saveData(merged, false, false);
-            this.isSyncing = false;
             this.emitEvent('syncSuccess', { source: 'merged' });
             return finalData;
 
         } catch (e) {
-            this.isSyncing = false;
             console.error('DoFormy: Sync failed', e);
             this.emitEvent('syncError', { message: e.message });
+            if (throwOnError) throw e;
             return localData;
+        } finally {
+            this.isSyncing = false;
         }
     },
 

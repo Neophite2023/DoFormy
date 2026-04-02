@@ -99,7 +99,7 @@ function initSync() {
         }
 
         try {
-            currentData = await DoFormyEngine.syncNow(currentData);
+            currentData = await DoFormyEngine.syncNow(currentData, { throwOnError: true });
             setState('sync-success');
             scheduleReset(3000);
         } catch (e) {

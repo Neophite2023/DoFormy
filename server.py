@@ -421,6 +421,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             DoFormyHandler.is_syncing = True
+            conn = None
 
             try:
                 content_length = int(self.headers['Content-Length'])
@@ -436,12 +437,26 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 existing_user_row = cursor.fetchone()
                 existing_user = dict(existing_user_row) if existing_user_row else None
 
+                existing_reset = int((existing_user or {}).get("resetVersion") or 0)
+                local_reset = int(local_user.get("resetVersion") or 0)
+
                 cursor.execute("SELECT * FROM history")
                 server_history = {}
                 for row in cursor.fetchall():
                     server_history[row["date"]] = history_row_to_record(row)
 
-                conn.close()
+                # If server has been reset, stale clients must not overwrite server state.
+                if existing_reset > local_reset:
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "success",
+                        "user": existing_user or {},
+                        "history": server_history
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
 
                 merged_user = merge_user(existing_user, local_user)
                 merged_history = {}
@@ -453,10 +468,21 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                         server_history.get(date)
                     )
 
-                local_reset = int(local_user.get("resetVersion") or 0)
-                existing_reset = int(existing_user.get("resetVersion") or 0) if existing_user else 0
-                if existing_reset > local_reset:
-                    local_history = {}
+                cursor.execute(
+                    "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ?, resetVersion = ? WHERE id = 1",
+                    (
+                        merged_user["exp"],
+                        merged_user["levelName"],
+                        merged_user["stepsGoal"],
+                        merged_user["startDate"],
+                        merged_user["resetVersion"],
+                    ),
+                )
+
+                for date, record in merged_history.items():
+                    save_history_row(cursor, date, record)
+
+                conn.commit()
 
                 self.send_response(200)
                 self.send_header("Content-type", "application/json; charset=utf-8")
@@ -474,6 +500,11 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
             finally:
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
                 DoFormyHandler.is_syncing = False
                 return
 
