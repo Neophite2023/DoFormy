@@ -38,6 +38,8 @@ def normalize_sync_meta(record):
 def normalize_history_record(record):
     source = record if isinstance(record, dict) else {}
     workout = source.get("workout") if isinstance(source.get("workout"), list) else []
+    if not workout:
+        workout = []
     weight = source.get("weight")
     return {
         "steps": int(source.get("steps") or 0),
@@ -256,6 +258,8 @@ def init_db():
 
 
 class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
+    is_syncing = False
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -265,6 +269,18 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         clean_path = self.path.split('?')[0].rstrip('/')
+
+        if clean_path == "/api/info":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "ok",
+                "name": "DoFormy Server",
+                "version": "2.5"
+            }, ensure_ascii=False).encode("utf-8"))
+            return
 
         if clean_path == "/api/data":
             self.send_response(200)
@@ -394,6 +410,72 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+
+        if self.path == "/api/sync":
+            if DoFormyHandler.is_syncing:
+                self.send_response(409)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "conflict", "message": "Sync in progress"}).encode("utf-8"))
+                return
+
+            DoFormyHandler.is_syncing = True
+
+            try:
+                content_length = int(self.headers['Content-Length'])
+                payload = json.loads(self.rfile.read(content_length))
+                local_user = payload.get("user") or {}
+                local_history = payload.get("history") or {}
+
+                conn = sqlite3.connect(DB_FILE)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                cursor.execute("SELECT * FROM user WHERE id = 1")
+                existing_user_row = cursor.fetchone()
+                existing_user = dict(existing_user_row) if existing_user_row else None
+
+                cursor.execute("SELECT * FROM history")
+                server_history = {}
+                for row in cursor.fetchall():
+                    server_history[row["date"]] = history_row_to_record(row)
+
+                conn.close()
+
+                merged_user = merge_user(existing_user, local_user)
+                merged_history = {}
+
+                all_dates = set(local_history.keys()) | set(server_history.keys())
+                for date in all_dates:
+                    merged_history[date] = merge_day_record(
+                        normalize_history_record(local_history.get(date, {})),
+                        server_history.get(date)
+                    )
+
+                local_reset = int(local_user.get("resetVersion") or 0)
+                existing_reset = int(existing_user.get("resetVersion") or 0) if existing_user else 0
+                if existing_reset > local_reset:
+                    local_history = {}
+
+                self.send_response(200)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "success",
+                    "user": merged_user,
+                    "history": merged_history
+                }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
+            finally:
+                DoFormyHandler.is_syncing = False
+                return
 
 
 def run_server():

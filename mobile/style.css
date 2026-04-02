@@ -38,17 +38,23 @@ header {
 }
 
 .btn-sync {
-    background: none;
+    background: var(--do-primary);
+    color: white;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
-    padding: 0.3rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 8px;
     transition: background 0.2s;
 }
 
 .btn-sync:hover {
-    background: #ECF0F1;
+    background: var(--do-primary-dark);
+}
+
+.btn-sync:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
 }
 
 .badge {

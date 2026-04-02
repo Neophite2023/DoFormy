@@ -1,8 +1,10 @@
 /**
- * DoFormy Engine 2.4 - robustnejsia synchronizacia
+ * DoFormy Engine 2.5 - ProjectTracker sync system
  */
 export const DoFormyEngine = {
     API_URL: localStorage.getItem('doformy_api_url') || 'https://doma-pc.tail85a624.ts.net:8000/api',
+    
+    isSyncing: false,
 
     setApiUrl(url) {
         localStorage.setItem('doformy_api_url', url);
@@ -11,6 +13,22 @@ export const DoFormyEngine = {
 
     getApiUrl() {
         return this.API_URL;
+    },
+
+    initSync() {
+        const params = new URLSearchParams(window.location.search);
+        const syncUrl = params.get('sync');
+        if (syncUrl) {
+            let url = syncUrl;
+            if (!url.endsWith('/api')) url += '/api';
+            this.setApiUrl(url);
+            localStorage.setItem('projecttracker_sync_base_url', url);
+        } else {
+            const storedUrl = localStorage.getItem('projecttracker_sync_base_url');
+            if (storedUrl) {
+                this.setApiUrl(storedUrl);
+            }
+        }
     },
 
     LEVELS: [
@@ -218,6 +236,94 @@ export const DoFormyEngine = {
             const newData = await this.syncData(data);
             if (callback) callback(newData);
         }, 2000);
+    },
+
+    emitEvent(eventName, detail = {}) {
+        window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    },
+
+    async checkServerHealth() {
+        try {
+            const res = await fetch(`${this.API_URL}/info`);
+            if (!res.ok) throw new Error("Health check failed");
+            return await res.json();
+        } catch (e) {
+            throw new Error("Server offline: " + e.message);
+        }
+    },
+
+    async syncNow(localData) {
+        if (this.isSyncing) {
+            console.log('DoFormy: Sync already in progress, skipping');
+            return localData;
+        }
+
+        if (!navigator.onLine) {
+            this.emitEvent('syncError', { message: 'Offline' });
+            return localData;
+        }
+
+        this.isSyncing = true;
+        this.emitEvent('syncStart', {});
+
+        try {
+            await this.checkServerHealth();
+
+            const normalizedLocal = this.normalizeData(localData);
+
+            const pushRes = await fetch(`${this.API_URL}/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(normalizedLocal)
+            });
+
+            if (pushRes.status === 409) {
+                this.emitEvent('syncError', { message: 'Sync conflict' });
+                return localData;
+            }
+
+            if (!pushRes.ok) {
+                throw new Error(`Push failed: ${pushRes.status}`);
+            }
+
+            const pushResult = await pushRes.json();
+            const normalizedServer = this.normalizeData({
+                user: pushResult.user,
+                history: pushResult.history
+            });
+
+            const localReset = Number(normalizedLocal.user.resetVersion) || 0;
+            const serverReset = Number(normalizedServer.user.resetVersion) || 0;
+
+            if (serverReset > localReset) {
+                this.isSyncing = false;
+                this.emitEvent('syncSuccess', { source: 'server' });
+                return await this.saveData(normalizedServer, false);
+            }
+
+            const merged = this.mergeData(normalizedLocal, normalizedServer);
+
+            const mergedPushRes = await fetch(`${this.API_URL}/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(merged)
+            });
+
+            if (!mergedPushRes.ok) {
+                throw new Error(`Final push failed: ${mergedPushRes.status}`);
+            }
+
+            const finalData = await this.saveData(merged, false, false);
+            this.isSyncing = false;
+            this.emitEvent('syncSuccess', { source: 'merged' });
+            return finalData;
+
+        } catch (e) {
+            this.isSyncing = false;
+            console.error('DoFormy: Sync failed', e);
+            this.emitEvent('syncError', { message: e.message });
+            return localData;
+        }
     },
 
     async syncData(localData) {

@@ -3,6 +3,8 @@ import { DoFormyEngine } from '../shared/engine.js';
 let currentData = null;
 
 async function bootstrapMobileData() {
+    DoFormyEngine.initSync();
+
     const localRaw = localStorage.getItem('doformy_data');
     let localData = null;
 
@@ -65,31 +67,39 @@ function initSync() {
     if (!btnSync) return;
 
     btnSync.onclick = async () => {
+        btnSync.textContent = '⏳ Čakám...';
+        btnSync.disabled = true;
+        
         let apiUrl = localStorage.getItem('doformy_api_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
-            if (!apiUrl) return;
+            if (!apiUrl) {
+                btnSync.textContent = 'Synchronizovať';
+                btnSync.disabled = false;
+                return;
+            }
             if (!apiUrl.endsWith('/api')) apiUrl += '/api';
             localStorage.setItem('doformy_api_url', apiUrl);
+            localStorage.setItem('projecttracker_sync_base_url', apiUrl);
             DoFormyEngine.setApiUrl(apiUrl);
         }
 
-        btnSync.textContent = '...';
-
         try {
-            currentData = await DoFormyEngine.syncData(currentData);
+            currentData = await DoFormyEngine.syncNow(currentData);
             initUI(currentData);
-            btnSync.textContent = 'OK';
+            btnSync.textContent = '✓ Hotové';
             setTimeout(() => {
-                btnSync.textContent = '🔄';
+                btnSync.textContent = 'Synchronizovať';
+                btnSync.disabled = false;
             }, 1500);
         } catch (e) {
             console.error('Mobile sync failed', e);
-            btnSync.textContent = 'ERR';
-            alert('Chyba synchronizácie: ' + e.message);
+            btnSync.textContent = '✕ Chyba';
             setTimeout(() => {
-                btnSync.textContent = '🔄';
+                btnSync.textContent = 'Synchronizovať';
+                btnSync.disabled = false;
             }, 2000);
+            alert('Chyba synchronizácie: ' + e.message);
         }
     };
 }

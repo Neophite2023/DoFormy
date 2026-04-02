@@ -3,6 +3,8 @@ import { DoFormyEngine } from '../shared/engine.js';
 let currentData = null;
 
 async function bootstrapDesktopData() {
+    DoFormyEngine.initSync();
+
     const localRaw = localStorage.getItem('doformy_data');
     let localData = null;
     if (localRaw) {
@@ -49,24 +51,19 @@ async function initDesktop() {
         refreshUI();
 
         console.log('DoFormy: Synchronizujem so serverom...');
-        currentData = await DoFormyEngine.syncData(currentData);
+        currentData = await DoFormyEngine.syncNow(currentData);
         refreshUI();
 
-        initSyncButton();
         renderFullPlan(currentData.user.levelName);
         setupQR();
         setupQuit();
         setupNavigation();
 
         setInterval(async () => {
+            if (!navigator.onLine || DoFormyEngine.isSyncing) return;
             try {
-                const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
-                if (serverData && JSON.stringify(serverData) !== JSON.stringify(currentData)) {
-                    console.log('DoFormy: Zistené nové dáta na serveri, aktualizujem...');
-                    currentData = DoFormyEngine.mergeData(currentData, serverData);
-                    await DoFormyEngine.saveData(currentData, false);
-                    refreshUI();
-                }
+                currentData = await DoFormyEngine.syncNow(currentData);
+                refreshUI();
             } catch (e) {
                 // polling má byť tichý
             }
@@ -86,7 +83,7 @@ async function syncDesktopChange(applyChange) {
     applyChange();
     currentData = await DoFormyEngine.saveData(currentData, false);
     refreshUI();
-    currentData = await DoFormyEngine.syncData(currentData);
+    currentData = await DoFormyEngine.syncNow(currentData);
     refreshUI();
 }
 
@@ -94,21 +91,30 @@ function initSyncButton() {
     const btnSync = document.getElementById('btn-sync');
     if (!btnSync) return;
 
+    window.addEventListener('syncStart', () => {
+        btnSync.textContent = '⏳';
+    });
+
+    window.addEventListener('syncSuccess', (e) => {
+        btnSync.textContent = 'OK';
+        setTimeout(() => {
+            btnSync.textContent = '🔄';
+        }, 1500);
+    });
+
+    window.addEventListener('syncError', (e) => {
+        btnSync.textContent = 'ERR';
+        setTimeout(() => {
+            btnSync.textContent = '🔄';
+        }, 2000);
+    });
+
     btnSync.onclick = async () => {
-        btnSync.textContent = '...';
         try {
-            currentData = await DoFormyEngine.syncData(currentData);
+            currentData = await DoFormyEngine.syncNow(currentData);
             refreshUI();
-            btnSync.textContent = 'OK';
-            setTimeout(() => {
-                btnSync.textContent = '🔄';
-            }, 1500);
         } catch (e) {
             console.error('Sync failed', e);
-            btnSync.textContent = 'ERR';
-            setTimeout(() => {
-                btnSync.textContent = '🔄';
-            }, 2000);
         }
     };
 }
