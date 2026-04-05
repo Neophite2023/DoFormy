@@ -146,7 +146,7 @@ def merge_day_record(local_record, server_record):
         "steps": max(local["steps"], server["steps"]),
         "workout": merge_workout(local["workout"], server["workout"]),
         "weight": pick_latest_value(local["weight"], server["weight"], local_meta["weight"], server_meta["weight"]),
-        "water": max(local["water"], server["water"]),
+        "water": pick_latest_value(local["water"], server["water"], local_meta["water"], server_meta["water"]),
         "last_updated": max(
             local["last_updated"],
             server["last_updated"],

@@ -471,7 +471,12 @@ export const DoFormyEngine = {
                 localMeta.weight,
                 serverMeta.weight
             ),
-            water: Math.max(normalizedLocal.water || 0, normalizedServer.water || 0),
+            water: this.pickLatestValue(
+                normalizedLocal.water,
+                normalizedServer.water,
+                localMeta.water,
+                serverMeta.water
+            ),
             last_updated: Math.max(
                 normalizedLocal.last_updated || 0,
                 normalizedServer.last_updated || 0,
