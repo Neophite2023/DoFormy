@@ -28,6 +28,13 @@
                 </div>
                 <span id="exp-text">0 / 500 XP</span>
             </div>
+
+            <div id="sidebar-workout" class="sidebar-workout">
+                <h4>💪 Dnešný tréning</h4>
+                <div id="sidebar-workout-content">
+                    <p class="muted">Dnes je deň oddychu.</p>
+                </div>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -37,51 +44,85 @@
                         <h1 id="main-title">Cesta rastu</h1>
                         <p id="current-date">--.--.----</p>
                     </div>
+                    <button id="btn-sync" class="btn-sync" title="Synchronizovať teraz">🔄</button>
                 </div>
             </header>
 
             <div id="view-dashboard" class="view-section">
-                <section class="today-widgets">
-                    <div class="widget-row">
-                        <div class="widget-card" id="widget-workout">
-                            <h4>💪 Dnešný tréning</h4>
-                            <p id="today-workout-desc">Načítavam...</p>
-                        </div>
-                        <div class="widget-card" id="widget-water">
-                            <h4>💧 Voda</h4>
-                            <p id="today-water-desc">0 / 2500 ml</p>
-                            <div class="water-bar-bg"><div id="water-bar-fill" class="water-bar-fill"></div></div>
-                            <div class="water-buttons">
-                                <button id="btn-desktop-water-add" class="btn-widget">+250ml</button>
-                                <button id="btn-desktop-water-reset" class="btn-widget btn-outline">0</button>
-                            </div>
+                <!-- KPI Bar -->
+                <section class="kpi-bar">
+                    <div class="kpi-card" id="kpi-steps">
+                        <div class="kpi-icon">👣</div>
+                        <div class="kpi-data">
+                            <span class="kpi-label">Kroky dnes</span>
+                            <span class="kpi-value" id="kpi-steps-val">0 / 6000</span>
                         </div>
                     </div>
-                    <div class="widget-row">
-                        <div class="widget-card" id="widget-weight">
-                            <h4>⚖️ Váha</h4>
-                            <p id="today-weight-desc">-- kg</p>
-                            <div class="weight-input-row">
-                                <input type="number" id="desktop-weight-input" placeholder="kg" step="0.1" class="weight-input">
-                                <button id="btn-desktop-weight-save" class="btn-widget">Uložiť</button>
-                            </div>
-                            <div class="weight-chart-container">
-                                <canvas id="desktop-weight-chart"></canvas>
-                            </div>
+                    <div class="kpi-card" id="kpi-water">
+                        <div class="kpi-icon">💧</div>
+                        <div class="kpi-data">
+                            <span class="kpi-label">Voda dnes</span>
+                            <span class="kpi-value" id="kpi-water-val">0 / 2500 ml</span>
+                        </div>
+                        <div class="kpi-actions">
+                            <button id="btn-desktop-water-add" class="btn-mini">+</button>
+                        </div>
+                    </div>
+                    <div class="kpi-card" id="kpi-weight">
+                        <div class="kpi-icon">⚖️</div>
+                        <div class="kpi-data">
+                            <span class="kpi-label">Aktuálna váha</span>
+                            <span class="kpi-value" id="kpi-weight-val">-- kg</span>
+                        </div>
+                        <div class="kpi-actions">
+                            <input type="number" id="desktop-weight-input" step="0.1" class="mini-input">
+                            <button id="btn-desktop-weight-save" class="btn-mini">OK</button>
                         </div>
                     </div>
                 </section>
 
-                <section class="weekly-overview">
-                    <h3>Posledných 7 dní</h3>
-                    <div id="weekly-stats" class="stats-grid">
-                        <!-- Dynamicky generované štatistiky -->
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+                    <div class="chart-card large">
+                        <div class="card-header">
+                            <h3>Trend váhy (30 dní)</h3>
+                            <span id="weight-trend-tag" class="trend-tag">--</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-weight-long"></canvas>
+                        </div>
                     </div>
-                </section>
+
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Aktivita krokov</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-steps-bar"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Pitný režim</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-water-area"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Kalendár konzistencie</h3>
+                        </div>
+                        <div id="consistency-grid" class="consistency-grid">
+                            <!-- Heatmap-like grid -->
+                        </div>
+                    </div>
+                </div>
 
                 <section class="next-milestone">
                     <div class="milestone-card">
-                        <h3>Ďalší cieľ</h3>
                         <p id="milestone-desc">Získajte 500 XP pre prechod do Fázy 2.</p>
                     </div>
                 </section>

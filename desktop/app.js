@@ -78,16 +78,32 @@ async function initDesktop() {
     }
 }
 
+let lastRenderedHash = '';
+
 function refreshUI() {
     if (!currentData) return;
     updateSidebar(currentData);
-    updateMain(currentData);
+    renderKPIBar(currentData);
+    renderSidebarWorkout(currentData);
+    
+    // Výpočet jednoduchého hashu dát pre kontrolu zmien
+    const currentHash = JSON.stringify(currentData.user) + 
+                       Object.values(currentData.history).reduce((acc, r) => acc + (r.last_updated || 0), 0);
+    
+    if (currentHash !== lastRenderedHash) {
+        renderCharts(currentData);
+        renderConsistencyGrid(currentData);
+        lastRenderedHash = currentHash;
+    }
+    
+    renderMilestone(currentData);
 }
 
 async function syncDesktopChange(applyChange) {
     applyChange();
     currentData = await DoFormyEngine.saveData(currentData, false);
     refreshUI();
+    // Desktop synch je pasívny v pollingu, ale pri manuálnej zmene urobíme aj POST
     currentData = await DoFormyEngine.syncNow(currentData);
     refreshUI();
 }
@@ -283,134 +299,107 @@ function updateSidebar(data) {
     if (elExpText) elExpText.textContent = `${data.user.exp} XP (Fáza ${currentIndex + 1})`;
 }
 
-function updateMain(data) {
-    const today = new Date();
+function renderKPIBar(data) {
     const todayStr = DoFormyEngine.getTodayStr();
-    const stats = data.history[todayStr] || { workout: [], steps: 0, weight: null, water: 0 };
+    const stats = data.history[todayStr] || { steps: 0, water: 0, weight: null };
     const elDate = document.getElementById('current-date');
 
     if (elDate) {
-        elDate.textContent = today.toLocaleDateString('sk-SK', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+        elDate.textContent = new Date().toLocaleDateString('sk-SK', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
     }
-
-    renderTodayWidgets(todayStr, stats);
-    renderWeeklyStats(data, today);
-    renderMilestone(data);
-}
-
-function renderTodayWidgets(todayStr, stats) {
-    const workout = DoFormyEngine.getTodayWorkout(currentData);
-    const workoutDesc = document.getElementById('today-workout-desc');
-
-    if (workout) {
-        let html = `<strong>${workout.title}</strong><br>Tempo: ${workout.tempo}<br><ul>`;
-        workout.exercises.forEach(ex => {
-            html += `<li>${ex.name} - ${ex.sets}x${ex.reps}</li>`;
-        });
-        html += '</ul>';
-        workoutDesc.innerHTML = html;
-    } else {
-        workoutDesc.innerHTML = '<strong>Regenerácia</strong><br>Dnes oddychový deň';
-    }
-
-    const latestWeight = DoFormyEngine.getLatestWeight(currentData);
+    
+    // Steps KPI
+    const stepsGoal = data.user.stepsGoal || 6000;
+    document.getElementById('kpi-steps-val').textContent = `${stats.steps || 0} / ${stepsGoal}`;
+    
+    // Water KPI
+    const latestWeight = DoFormyEngine.getLatestWeight(data);
     const waterGoal = DoFormyEngine.getWaterGoal(latestWeight);
-    const currentWater = stats.water || 0;
-    document.getElementById('today-water-desc').textContent = `${currentWater} / ${waterGoal} ml`;
-    document.getElementById('water-bar-fill').style.width = `${Math.min((currentWater / waterGoal) * 100, 100)}%`;
-
+    document.getElementById('kpi-water-val').textContent = `${stats.water || 0} / ${waterGoal} ml`;
+    
+    // Weight KPI
+    const weightVal = document.getElementById('kpi-weight-val');
     const weightInput = document.getElementById('desktop-weight-input');
     if (latestWeight) {
-        const displayWeight = Number(latestWeight).toFixed(1);
-        document.getElementById('today-weight-desc').textContent = `${displayWeight} kg`;
+        weightVal.textContent = `${Number(latestWeight).toFixed(1)} kg`;
         if (document.activeElement !== weightInput) {
-            weightInput.value = displayWeight;
+            weightInput.value = Number(latestWeight).toFixed(1);
         }
-    } else {
-        document.getElementById('today-weight-desc').textContent = '-- kg';
     }
 
+    // Bind actions
     document.getElementById('btn-desktop-water-add').onclick = async () => {
-        try {
-            await syncDesktopChange(() => {
-                DoFormyEngine.logWater(currentData, todayStr, 250);
-            });
-        } catch (e) {
-            console.error('Desktop water sync failed', e);
-        }
+        await syncDesktopChange(() => {
+            DoFormyEngine.logWater(currentData, todayStr, 250);
+        });
     };
 
-    const btnResetWater = document.getElementById('btn-desktop-water-reset');
-    if (btnResetWater) {
-        btnResetWater.onclick = async () => {
-            if (!confirm('Vynulovať vodu na 0 ml?')) return;
-            try {
-                await syncDesktopChange(() => {
-                    DoFormyEngine.logWater(currentData, todayStr, 0, true);
-                });
-            } catch (e) {
-                console.error('Desktop water reset failed', e);
-            }
-        };
-    }
-
-    const btnSaveWeight = document.getElementById('btn-desktop-weight-save');
-    btnSaveWeight.onclick = async () => {
+    document.getElementById('btn-desktop-weight-save').onclick = async () => {
         const newWeight = parseFloat(weightInput.value);
         if (newWeight && !isNaN(newWeight) && newWeight > 0) {
-            btnSaveWeight.textContent = '...';
-            try {
-                await syncDesktopChange(() => {
-                    DoFormyEngine.logWeight(currentData, todayStr, newWeight);
-                });
-                btnSaveWeight.textContent = 'OK';
-                setTimeout(() => {
-                    btnSaveWeight.textContent = 'Uložiť';
-                }, 1500);
-            } catch (e) {
-                console.error('Desktop weight sync failed', e);
-                btnSaveWeight.textContent = 'ERR';
-                setTimeout(() => {
-                    btnSaveWeight.textContent = 'Uložiť';
-                }, 2000);
-            }
+            await syncDesktopChange(() => {
+                DoFormyEngine.logWeight(currentData, todayStr, newWeight);
+            });
         }
     };
-
-    renderDesktopWeightChart(currentData);
 }
 
-let weightChart = null;
-function renderDesktopWeightChart(data) {
-    const ctx = document.getElementById('desktop-weight-chart');
+function renderSidebarWorkout(data) {
+    const content = document.getElementById('sidebar-workout-content');
+    const workout = DoFormyEngine.getTodayWorkout(data);
+    
+    if (workout) {
+        let html = `<p style="margin-bottom:0.5rem;"><strong>${workout.title}</strong></p><ul>`;
+        workout.exercises.forEach(ex => {
+            html += `<li>${ex.name} (${ex.sets}x${ex.reps})</li>`;
+        });
+        html += '</ul>';
+        content.innerHTML = html;
+    } else {
+        content.innerHTML = '<p class="muted">Dnes je deň oddychu. Sústreď sa na regeneráciu.</p>';
+    }
+}
+
+let charts = { weight: null, steps: null, water: null };
+
+function renderCharts(data) {
+    renderWeightChartLong(data);
+    renderStepsChart(data);
+    renderWaterChart(data);
+}
+
+function renderWeightChartLong(data) {
+    const ctx = document.getElementById('chart-weight-long');
     if (!ctx) return;
 
-    const weightHistory = DoFormyEngine.getWeightHistory(data);
-    if (weightHistory.length === 0) {
-        if (weightChart) {
-            weightChart.destroy();
-            weightChart = null;
-        }
-        return;
+    const history = DoFormyEngine.getWeightHistory(data).slice(-30);
+    if (history.length === 0) return;
+
+    if (charts.weight) charts.weight.destroy();
+
+    const trendTag = document.getElementById('weight-trend-tag');
+    if (history.length >= 2) {
+        const diff = history[history.length - 1].weight - history[0].weight;
+        trendTag.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg (30d)`;
+        trendTag.style.background = diff <= 0 ? '#E8F8EF' : '#FDEDEC';
+        trendTag.style.color = diff <= 0 ? '#2ECC71' : '#E74C3C';
     }
 
-    if (weightChart) weightChart.destroy();
-    weightChart = new Chart(ctx, {
+    charts.weight = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: weightHistory.map(w => w.date.slice(5)),
+            labels: history.map(h => h.date.slice(5)),
             datasets: [{
-                data: weightHistory.map(w => w.weight),
-                borderColor: '#2ECC71',
-                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                label: 'Váha',
+                data: history.map(h => h.weight),
+                borderColor: '#2C3E50',
+                backgroundColor: 'rgba(44, 62, 80, 0.05)',
                 fill: true,
-                tension: 0.3,
-                pointRadius: weightHistory.length === 1 ? 5 : 2
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#2C3E50'
             }]
         },
         options: {
@@ -418,35 +407,119 @@ function renderDesktopWeightChart(data) {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { display: weightHistory.length > 1 },
-                y: { display: false }
+                y: { beginAtZero: false, grid: { color: '#F0F4F2' } },
+                x: { grid: { display: false } }
             }
         }
     });
 }
 
-function renderWeeklyStats(data, today) {
-    const weeklyContainer = document.getElementById('weekly-stats');
-    if (!weeklyContainer) return;
+function renderStepsChart(data) {
+    const ctx = document.getElementById('chart-steps-bar');
+    if (!ctx) return;
 
-    weeklyContainer.innerHTML = '';
+    const labels = [];
+    const stepData = [];
+    const today = new Date();
+    const goal = data.user.stepsGoal || 6000;
+
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dStr = d.toISOString().split('T')[0];
+        labels.push(d.toLocaleDateString('sk-SK', { weekday: 'short' }));
+        stepData.push(data.history[dStr]?.steps || 0);
+    }
+
+    if (charts.steps) charts.steps.destroy();
+    charts.steps = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: stepData,
+                backgroundColor: stepData.map(v => v >= goal ? '#2ECC71' : '#ECF0F1'),
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { display: false },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderWaterChart(data) {
+    const ctx = document.getElementById('chart-water-area');
+    if (!ctx) return;
+
+    const labels = [];
+    const waterData = [];
+    const today = new Date();
 
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
-        const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const stats = data.history[dStr] || { workout: false, steps: 0, habit: false, weight: null, water: 0 };
+        const dStr = d.toISOString().split('T')[0];
+        labels.push(d.toLocaleDateString('sk-SK', { weekday: 'short' }));
+        waterData.push(data.history[dStr]?.water || 0);
+    }
 
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'day-stat';
-        dayDiv.innerHTML = `
-            <small>${d.toLocaleDateString('sk-SK', { weekday: 'short' })}</small>
-            <div class="dot-container">
-                <div class="dot ${(stats.workout && stats.workout.length > 0) ? 'active' : ''}"></div>
-                <div class="dot ${(stats.steps || 0) >= (data.user.stepsGoal || 6000) ? 'active' : ''}"></div>
-            </div>
-        `;
-        weeklyContainer.appendChild(dayDiv);
+    if (charts.water) charts.water.destroy();
+    charts.water = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: waterData,
+                borderColor: '#3498DB',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { display: false },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderConsistencyGrid(data) {
+    const container = document.getElementById('consistency-grid');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const today = new Date();
+    const goal = data.user.stepsGoal || 6000;
+
+    // Last 14 days grid
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dStr = d.toISOString().split('T')[0];
+        const stats = data.history[dStr] || { steps: 0, water: 0, workout: [] };
+        
+        let score = 0;
+        if ((stats.steps || 0) >= goal) score++;
+        if ((stats.water || 0) >= 2000) score++;
+        if (stats.workout && stats.workout.length > 0) score += 2;
+
+        const dayEl = document.createElement('div');
+        dayEl.className = `consistency-day level-${score}`;
+        dayEl.setAttribute('data-date', `${d.toLocaleDateString('sk-SK')} (${score} body)`);
+        container.appendChild(dayEl);
     }
 }
 

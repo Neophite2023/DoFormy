@@ -559,7 +559,9 @@ export const DoFormyEngine = {
 
     getWaterGoal(weightKg) {
         if (!weightKg || weightKg <= 0) return 2500;
-        return Math.round(weightKg * 35);
+        // Výpočet: 35ml na kg váhy, zaokrúhlené na najbližších 100ml
+        const exact = weightKg * 35;
+        return Math.round(exact / 100) * 100;
     },
 
     getTodayWorkout(data) {
