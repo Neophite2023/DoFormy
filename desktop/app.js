@@ -198,11 +198,9 @@ function setupQR() {
 
     if (!btn || !modal) return;
 
-    const currentUrl = window.location.href;
     const githubPagesUrl = 'https://neophite2023.github.io/DoFormy/mobile/index.html';
-    const qrText = currentUrl.includes('localhost')
-        ? githubPagesUrl
-        : currentUrl.replace('desktop/index.html', 'mobile/index.html');
+    const serverOrigin = window.location.origin;
+    const qrText = `${githubPagesUrl}?sync=${encodeURIComponent(serverOrigin)}`;
 
     btn.onclick = () => {
         qrContainer.innerHTML = '';

@@ -55,23 +55,6 @@ async function bootstrapMobileData() {
 
     const normalizedLocal = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
 
-    try {
-        const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
-        const normalizedServer = DoFormyEngine.normalizeData(serverData);
-
-        const localReset = Number(normalizedLocal.user.resetVersion) || 0;
-        const serverReset = Number(normalizedServer.user.resetVersion) || 0;
-
-        if (serverReset > localReset) {
-            // Server DB was reset; prevent mobile from re-uploading old local test data.
-            localStorage.removeItem('doformy_data');
-            localStorage.setItem('doformy_data', JSON.stringify(normalizedServer));
-            return normalizedServer;
-        }
-    } catch (e) {
-        // Offline or server not reachable: keep local (or initial) data.
-    }
-
     return normalizedLocal;
 }
 
@@ -133,6 +116,8 @@ function initSync() {
             localStorage.setItem('doformy_api_url', apiUrl);
             localStorage.setItem('projecttracker_sync_base_url', apiUrl);
             DoFormyEngine.setApiUrl(apiUrl);
+        } else {
+            DoFormyEngine.setApiUrl(apiUrl);
         }
 
         try {
@@ -163,7 +148,7 @@ function initSettings() {
 
     const savedUrl = localStorage.getItem('doformy_api_url') || '';
     if (apiInput) apiInput.value = savedUrl;
-    if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${savedUrl || 'http://localhost:8000/api'}`;
+    if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${savedUrl || '(nepripojené)'}`;
 
     document.getElementById('btn-save-api').onclick = () => {
         let url = (apiInput ? apiInput.value : '').trim();
@@ -175,14 +160,19 @@ function initSettings() {
             alert('URL uložená.');
         } else {
             localStorage.removeItem('doformy_api_url');
-            DoFormyEngine.setApiUrl('http://localhost:8000/api');
-            if (currentApiUrl) currentApiUrl.textContent = 'Aktuálne: http://localhost:8000/api';
-            alert('URL resetovaná.');
+            localStorage.removeItem('projecttracker_sync_base_url');
+            DoFormyEngine.setApiUrl(null);
+            if (currentApiUrl) currentApiUrl.textContent = 'Aktuálne: (nepripojené)';
+            alert('URL vymazaná.');
         }
     };
 
     document.getElementById('btn-sync-download').onclick = async () => {
         try {
+            if (!DoFormyEngine.getApiUrl()) {
+                alert('Najprv nastavte Server URL.');
+                return;
+            }
             currentData = await DoFormyEngine.getData({ fallbackToLocal: false });
             localStorage.setItem('doformy_data', JSON.stringify(currentData));
             alert('Dáta stiahnuté.');
@@ -194,6 +184,10 @@ function initSettings() {
 
     document.getElementById('btn-sync-upload').onclick = async () => {
         try {
+            if (!DoFormyEngine.getApiUrl()) {
+                alert('Najprv nastavte Server URL.');
+                return;
+            }
             currentData = await DoFormyEngine.syncData(currentData);
             alert('Dáta zosynchronizované.');
         } catch (e) {

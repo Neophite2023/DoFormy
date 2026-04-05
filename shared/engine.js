@@ -2,13 +2,44 @@
  * DoFormy Engine 2.5 - ProjectTracker sync system
  */
 export const DoFormyEngine = {
-    API_URL: localStorage.getItem('doformy_api_url') || 'https://doma-pc.tail85a624.ts.net:8000/api',
+    API_URL: (() => {
+        const explicit = localStorage.getItem('doformy_api_url') || localStorage.getItem('projecttracker_sync_base_url');
+        if (explicit) return explicit;
+
+        try {
+            const path = window.location.pathname || '';
+            if (path.includes('/desktop/')) {
+                return `${window.location.origin}/api`;
+            }
+        } catch (e) {
+            // ignore (non-browser env)
+        }
+
+        return null;
+    })(),
     
     isSyncing: false,
 
-    setApiUrl(url) {
-        localStorage.setItem('doformy_api_url', url);
-        this.API_URL = url;
+    normalizeApiUrl(url) {
+        if (!url) return null;
+        const trimmed = String(url).trim().replace(/\/+$/, '');
+        if (!trimmed) return null;
+        return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+    },
+
+    setApiUrl(url, options = {}) {
+        const { persist = true } = options;
+        const normalized = this.normalizeApiUrl(url);
+
+        this.API_URL = normalized;
+
+        if (!persist) return;
+
+        if (normalized) {
+            localStorage.setItem('doformy_api_url', normalized);
+        } else {
+            localStorage.removeItem('doformy_api_url');
+        }
     },
 
     getApiUrl() {
@@ -19,15 +50,31 @@ export const DoFormyEngine = {
         const params = new URLSearchParams(window.location.search);
         const syncUrl = params.get('sync');
         if (syncUrl) {
-            let url = syncUrl;
-            if (!url.endsWith('/api')) url += '/api';
-            this.setApiUrl(url);
-            localStorage.setItem('projecttracker_sync_base_url', url);
-        } else {
-            const storedUrl = localStorage.getItem('projecttracker_sync_base_url');
-            if (storedUrl) {
-                this.setApiUrl(storedUrl);
+            const apiUrl = this.normalizeApiUrl(syncUrl);
+            this.setApiUrl(apiUrl);
+            if (apiUrl) localStorage.setItem('projecttracker_sync_base_url', apiUrl);
+            return;
+        }
+
+        const explicit = localStorage.getItem('doformy_api_url');
+        if (explicit) {
+            this.setApiUrl(explicit);
+            return;
+        }
+
+        const storedUrl = localStorage.getItem('projecttracker_sync_base_url');
+        if (storedUrl) {
+            this.setApiUrl(storedUrl);
+            return;
+        }
+
+        try {
+            const path = window.location.pathname || '';
+            if (path.includes('/desktop/')) {
+                this.setApiUrl(`${window.location.origin}/api`, { persist: false });
             }
+        } catch (e) {
+            // ignore
         }
     },
 
@@ -188,6 +235,7 @@ export const DoFormyEngine = {
         const { fallbackToLocal = true } = options;
 
         try {
+            if (!this.API_URL) throw new Error('Server URL not set');
             const res = await fetch(`${this.API_URL}/data`);
             if (!res.ok) throw new Error("API error");
             return this.normalizeData(await res.json());
@@ -244,6 +292,7 @@ export const DoFormyEngine = {
 
     async checkServerHealth() {
         try {
+            if (!this.API_URL) throw new Error('Server URL not set');
             const res = await fetch(`${this.API_URL}/info`);
             if (!res.ok) throw new Error("Health check failed");
             return await res.json();
@@ -257,6 +306,12 @@ export const DoFormyEngine = {
 
         if (this.isSyncing) {
             console.log('DoFormy: Sync already in progress, skipping');
+            return localData;
+        }
+
+        if (!this.API_URL) {
+            this.emitEvent('syncError', { message: 'Server URL not set' });
+            if (throwOnError) throw new Error('Server URL not set');
             return localData;
         }
 
