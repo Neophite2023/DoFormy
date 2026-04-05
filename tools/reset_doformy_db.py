@@ -24,7 +24,8 @@ def init_db(conn, start_date):
             exp INTEGER,
             levelName TEXT,
             stepsGoal INTEGER,
-            startDate TEXT
+            startDate TEXT,
+            resetVersion INTEGER DEFAULT 0
         )
         """
     )
@@ -33,7 +34,6 @@ def init_db(conn, start_date):
         CREATE TABLE IF NOT EXISTS history (
             date TEXT PRIMARY KEY,
             steps INTEGER,
-            habit INTEGER,
             workout_json TEXT,
             weight REAL,
             water INTEGER DEFAULT 0,
@@ -46,7 +46,7 @@ def init_db(conn, start_date):
     cur.execute("SELECT COUNT(*) FROM user WHERE id = 1")
     if int(cur.fetchone()[0] or 0) == 0:
         cur.execute(
-            "INSERT INTO user (id, exp, levelName, stepsGoal, startDate) VALUES (1, ?, ?, ?, ?)",
+            "INSERT INTO user (id, exp, levelName, stepsGoal, startDate, resetVersion) VALUES (1, ?, ?, ?, ?, 1)",
             (0, DEFAULT_LEVEL_NAME, 6000, start_date),
         )
     conn.commit()
@@ -67,28 +67,32 @@ def reset_db(db_path, start_date, make_backup):
         init_db(conn, start_date)
         cur = conn.cursor()
 
+        # Get current reset version
+        cur.execute("SELECT resetVersion FROM user WHERE id = 1")
+        row = cur.fetchone()
+        current_reset = int(row[0] or 0) if row else 0
+        new_reset = current_reset + 1
+
         cur.execute("SELECT COUNT(*) FROM history")
         before_history = int(cur.fetchone()[0] or 0)
 
         cur.execute("DELETE FROM history")
         cur.execute(
-            "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ? WHERE id = 1",
-            (0, DEFAULT_LEVEL_NAME, 6000, start_date),
+            "UPDATE user SET exp = ?, levelName = ?, stepsGoal = ?, startDate = ?, resetVersion = ? WHERE id = 1",
+            (0, DEFAULT_LEVEL_NAME, 6000, start_date, new_reset),
         )
         conn.commit()
 
-        # Optional compaction; safe, but can fail if DB is locked elsewhere.
+        # Optional compaction
         try:
             cur.execute("VACUUM")
             conn.commit()
         except sqlite3.OperationalError:
             pass
 
-        cur.execute("SELECT COUNT(*) FROM history")
-        after_history = int(cur.fetchone()[0] or 0)
-
-        print(f"history rows: {before_history} -> {after_history}")
+        print(f"history rows: {before_history} -> 0")
         print(f"user.startDate set to: {start_date}")
+        print(f"resetVersion bumped to: {new_reset}")
     finally:
         conn.close()
 
