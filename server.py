@@ -5,16 +5,35 @@ import sqlite3
 import ssl
 import threading
 import time
+import traceback
 import webbrowser
+from datetime import datetime
 
 PORT = 8000
 DB_FILE = "doformy.db"
 HOST_NAME = "doma-pc.tail85a624.ts.net"
 URL = f"https://{HOST_NAME}:{PORT}/desktop/index.html"
+LOG_FILE = "server.log"
+RESTART_DELAY_SEC = 2
 
 DEFAULT_LEVEL_NAME = "F\u00e1za 1: Z\u00e1klady"
 LEGACY_LEVEL_NAME = "F\u00e1za 1: Adapt\u00e1cia"
 DEFAULT_START_DATE = "2023-10-27T12:00:00.000Z"
+
+
+def log_server_event(message, exc=None):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] {message}"
+    print(line, flush=True)
+
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as log_handle:
+            log_handle.write(line + "\n")
+            if exc is not None:
+                trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+                log_handle.write(trace + "\n")
+    except Exception:
+        pass
 
 
 def normalize_sync_meta(record):
@@ -509,28 +528,51 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
 
+class DoFormyThreadingHTTPServer(http.server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+def create_http_server():
+    server = DoFormyThreadingHTTPServer(("0.0.0.0", PORT), DoFormyHandler)
+    cert_path = "certs/cert.crt"
+    key_path = "certs/cert.key"
+
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=cert_path, keyfile=key_path)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        log_server_event(f"DoFormy Server running on HTTPS (https://{HOST_NAME}:{PORT})")
+    else:
+        log_server_event(f"Warning: certificates not found in {cert_path}. Running on HTTP.")
+
+    return server
+
+
 def run_server():
     init_db()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     threading.Thread(target=lambda: (time.sleep(1.5), webbrowser.open(URL)), daemon=True).start()
 
-    try:
-        server = http.server.HTTPServer(('0.0.0.0', PORT), DoFormyHandler)
-        cert_path = "certs/cert.crt"
-        key_path = "certs/cert.key"
+    while True:
+        server = None
+        try:
+            server = create_http_server()
+            server.serve_forever()
+            log_server_event("Server loop exited unexpectedly, restarting...")
+        except KeyboardInterrupt:
+            log_server_event("Server interrupted by keyboard, shutting down.")
+            break
+        except Exception as exc:
+            log_server_event("Server crashed, restarting...", exc)
+        finally:
+            if server is not None:
+                try:
+                    server.server_close()
+                except Exception:
+                    pass
 
-        if os.path.exists(cert_path) and os.path.exists(key_path):
-            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            context.load_cert_chain(certfile=cert_path, keyfile=key_path)
-            server.socket = context.wrap_socket(server.socket, server_side=True)
-            print(f"DoFormy Server running on HTTPS (https://{HOST_NAME}:{PORT})", flush=True)
-        else:
-            print(f"Warning: certificates not found in {cert_path}. Running on HTTP.", flush=True)
-
-        server.serve_forever()
-    except Exception as exc:
-        print(f"Server error: {exc}", flush=True)
-        os._exit(0)
+        time.sleep(RESTART_DELAY_SEC)
 
 
 if __name__ == "__main__":
