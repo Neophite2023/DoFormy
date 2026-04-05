@@ -67,7 +67,7 @@ async function initDesktop() {
             } catch (e) {
                 // polling má byť tichý
             }
-        }, 5000);
+        }, 2000);
     } catch (e) {
         console.error('DoFormy: Chyba pri inicializácii', e);
     }
