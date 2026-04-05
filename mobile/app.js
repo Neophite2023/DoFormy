@@ -260,7 +260,7 @@ async function initNotifications() {
 function initUI(data) {
     const todayStr = DoFormyEngine.getTodayStr();
     const phase = DoFormyEngine.getCurrentPhase(data.user.startDate);
-    const stats = data.history[todayStr] || { workout: [], steps: 0, habit: false, weight: null, water: 0 };
+    const stats = data.history[todayStr] || { workout: [], steps: 0, weight: null, water: 0 };
 
     document.getElementById('user-level').textContent = data.user.levelName || 'Fáza 1';
     document.getElementById('user-exp').textContent = `${data.user.exp} XP`;
@@ -269,7 +269,6 @@ function initUI(data) {
     renderWeightCard(todayStr);
     renderWaterCard(todayStr, stats);
     renderStepsCard(todayStr, stats);
-    renderHabitCard(todayStr);
 
     const stepsGoal = document.getElementById('steps-goal');
     if (stepsGoal) {

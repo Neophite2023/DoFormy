@@ -286,7 +286,7 @@ function updateSidebar(data) {
 function updateMain(data) {
     const today = new Date();
     const todayStr = DoFormyEngine.getTodayStr();
-    const stats = data.history[todayStr] || { workout: [], steps: 0, habit: false, weight: null, water: 0 };
+    const stats = data.history[todayStr] || { workout: [], steps: 0, weight: null, water: 0 };
     const elDate = document.getElementById('current-date');
 
     if (elDate) {
@@ -443,7 +443,6 @@ function renderWeeklyStats(data, today) {
             <small>${d.toLocaleDateString('sk-SK', { weekday: 'short' })}</small>
             <div class="dot-container">
                 <div class="dot ${(stats.workout && stats.workout.length > 0) ? 'active' : ''}"></div>
-                <div class="dot ${stats.habit ? 'active' : ''}"></div>
                 <div class="dot ${(stats.steps || 0) >= (data.user.stepsGoal || 6000) ? 'active' : ''}"></div>
             </div>
         `;

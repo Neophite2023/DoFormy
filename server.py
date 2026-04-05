@@ -51,7 +51,6 @@ def normalize_sync_meta(record):
 
     return {
         "steps": sync_time("steps"),
-        "habit": sync_time("habit"),
         "workout": sync_time("workout"),
         "weight": sync_time("weight"),
         "water": sync_time("water"),
@@ -66,7 +65,6 @@ def normalize_history_record(record):
     weight = source.get("weight")
     return {
         "steps": int(source.get("steps") or 0),
-        "habit": bool(source.get("habit")),
         "workout": [
             {"name": item.get("name"), "reps": int(item.get("reps") or 0)}
             for item in workout
@@ -92,7 +90,7 @@ def history_row_to_record(row):
     return normalize_history_record(
         {
             "steps": row["steps"],
-            "habit": bool(row["habit"]),
+            "workout_json": row["workout_json"], # Temporary mapping for normalize
             "workout": json.loads(row["workout_json"]) if row["workout_json"] else [],
             "weight": row["weight"],
             "water": row["water"],
@@ -146,7 +144,6 @@ def merge_day_record(local_record, server_record):
 
     return {
         "steps": max(local["steps"], server["steps"]),
-        "habit": local["habit"] or server["habit"],
         "workout": merge_workout(local["workout"], server["workout"]),
         "weight": pick_latest_value(local["weight"], server["weight"], local_meta["weight"], server_meta["weight"]),
         "water": max(local["water"], server["water"]),
@@ -154,19 +151,16 @@ def merge_day_record(local_record, server_record):
             local["last_updated"],
             server["last_updated"],
             local_meta["steps"],
-            local_meta["habit"],
             local_meta["workout"],
             local_meta["weight"],
             local_meta["water"],
             server_meta["steps"],
-            server_meta["habit"],
             server_meta["workout"],
             server_meta["weight"],
             server_meta["water"],
         ),
         "sync_meta": {
             "steps": max(local_meta["steps"], server_meta["steps"]),
-            "habit": max(local_meta["habit"], server_meta["habit"]),
             "workout": max(local_meta["workout"], server_meta["workout"]),
             "weight": max(local_meta["weight"], server_meta["weight"]),
             "water": max(local_meta["water"], server_meta["water"]),
@@ -199,13 +193,12 @@ def save_history_row(cursor, date, record):
     cursor.execute(
         """
         INSERT OR REPLACE INTO history
-        (date, steps, habit, workout_json, weight, water, last_updated, sync_meta_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (date, steps, workout_json, weight, water, last_updated, sync_meta_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             date,
             record.get("steps", 0),
-            int(record.get("habit", False)),
             json.dumps(record.get("workout", []), ensure_ascii=False),
             record.get("weight"),
             record.get("water", 0),
@@ -235,7 +228,6 @@ def init_db():
         CREATE TABLE IF NOT EXISTS history (
             date TEXT PRIMARY KEY,
             steps INTEGER,
-            habit INTEGER,
             workout_json TEXT,
             weight REAL,
             water INTEGER DEFAULT 0,

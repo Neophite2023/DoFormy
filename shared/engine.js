@@ -191,7 +191,6 @@ export const DoFormyEngine = {
         const weight = source.weight;
         return {
             steps: Number(source.steps) || 0,
-            habit: Boolean(source.habit),
             workout: Array.isArray(source.workout)
                 ? source.workout
                     .filter(exercise => exercise && exercise.name)
@@ -215,7 +214,6 @@ export const DoFormyEngine = {
 
         return {
             steps: syncMeta.steps === undefined || syncMeta.steps === null ? fallback : Number(syncMeta.steps),
-            habit: syncMeta.habit === undefined || syncMeta.habit === null ? fallback : Number(syncMeta.habit),
             workout: syncMeta.workout === undefined || syncMeta.workout === null ? fallback : Number(syncMeta.workout),
             weight: syncMeta.weight === undefined || syncMeta.weight === null ? fallback : Number(syncMeta.weight),
             water: syncMeta.water === undefined || syncMeta.water === null ? fallback : Number(syncMeta.water)
@@ -226,7 +224,6 @@ export const DoFormyEngine = {
         if (!data.history[date]) {
             data.history[date] = {
                 steps: 0,
-                habit: false,
                 workout: [],
                 weight: null,
                 water: 0,
@@ -467,7 +464,6 @@ export const DoFormyEngine = {
 
         return {
             steps: Math.max(normalizedLocal.steps || 0, normalizedServer.steps || 0),
-            habit: normalizedLocal.habit || normalizedServer.habit,
             workout: this.mergeWorkout(normalizedLocal.workout, normalizedServer.workout),
             weight: this.pickLatestValue(
                 normalizedLocal.weight,
@@ -480,19 +476,16 @@ export const DoFormyEngine = {
                 normalizedLocal.last_updated || 0,
                 normalizedServer.last_updated || 0,
                 localMeta.steps,
-                localMeta.habit,
                 localMeta.workout,
                 localMeta.weight,
                 localMeta.water,
                 serverMeta.steps,
-                serverMeta.habit,
                 serverMeta.workout,
                 serverMeta.weight,
                 serverMeta.water
             ),
             sync_meta: {
                 steps: Math.max(localMeta.steps, serverMeta.steps),
-                habit: Math.max(localMeta.habit, serverMeta.habit),
                 workout: Math.max(localMeta.workout, serverMeta.workout),
                 weight: Math.max(localMeta.weight, serverMeta.weight),
                 water: Math.max(localMeta.water, serverMeta.water)
@@ -616,14 +609,6 @@ export const DoFormyEngine = {
         const record = this.ensureHistoryRecord(data, date);
         record.steps = (record.steps || 0) + steps;
         this.touchHistoryField(record, 'steps');
-        return data;
-    },
-
-    logHabit(data, date) {
-        const record = this.ensureHistoryRecord(data, date);
-        record.habit = true;
-        this.touchHistoryField(record, 'habit');
-        data.user.exp += 10;
         return data;
     },
 
