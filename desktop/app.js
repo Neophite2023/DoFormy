@@ -62,8 +62,13 @@ async function initDesktop() {
         setInterval(async () => {
             if (!navigator.onLine || DoFormyEngine.isSyncing) return;
             try {
-                currentData = await DoFormyEngine.syncNow(currentData);
-                refreshUI();
+                // Desktop v pollingu iba sťahuje dáta (Vizualizácia)
+                const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
+                if (serverData) {
+                    currentData = DoFormyEngine.mergeData(currentData, serverData);
+                    localStorage.setItem('doformy_data', JSON.stringify(currentData));
+                    refreshUI();
+                }
             } catch (e) {
                 // polling má byť tichý
             }

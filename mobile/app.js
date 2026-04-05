@@ -61,15 +61,11 @@ async function bootstrapMobileData() {
         try {
             const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
             if (serverData && serverData.user) {
-                // Zlúčime len používateľa, históriu necháme na manuálnu synchronizáciu,
-                // aby sme predišli strate neuložených lokálnych zmien hneď pri štarte.
+                // Zlúčime používateľa, aby sme mali aktuálnu resetVersion a exp.
                 normalized.user = DoFormyEngine.mergeUser(normalized.user, serverData.user);
                 
-                // Ak server hlási vyšší resetVersion, musíme sa podriadiť
-                if ((Number(serverData.user.resetVersion) || 0) > (Number(localData?.user?.resetVersion) || 0)) {
-                    console.log('DoFormy: Server hlási reset databázy, aktualizujem lokálny stav.');
-                    normalized = DoFormyEngine.normalizeData(serverData);
-                }
+                // DÔLEŽITÉ: Už tu neprepisujeme normalized celými serverovými dátami (ani pri resete),
+                // aby sme nezhodili neodoslané lokálne zmeny v histórii pred manuálnym Syncom.
                 
                 localStorage.setItem('doformy_data', JSON.stringify(normalized));
             }
