@@ -1,4 +1,4 @@
-const CACHE_NAME = 'doformy-v12';
+const CACHE_NAME = 'doformy-v13';
 const APP_ASSETS = [
     './index.html',
     './style.css',
@@ -39,7 +39,12 @@ self.addEventListener('fetch', event => {
     }
 
     if (url.pathname.includes('/api/')) {
-        event.respondWith(fetch(request));
+        event.respondWith(
+            fetch(request).catch(() => new Response(JSON.stringify({ status: 'offline' }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            }))
+        );
         return;
     }
 

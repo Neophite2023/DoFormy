@@ -127,7 +127,7 @@ function initSync() {
         } catch (e) {
             setState('sync-error');
             scheduleReset(4000);
-            alert('Sync zlyhal: ' + (e?.message || e));
+            alert('Sync zlyhal: ' + (e?.message || e) + `\n\nPouzite URL: ${DoFormyEngine.getApiUrl() || '(nepripojene)'}`);
         } finally {
             btnSync.disabled = false;
         }

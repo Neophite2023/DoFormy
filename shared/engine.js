@@ -298,7 +298,8 @@ export const DoFormyEngine = {
             if (!res.ok) throw new Error("Health check failed");
             return await res.json();
         } catch (e) {
-            throw new Error("Server offline: " + e.message);
+            const apiUrl = this.API_URL || '(not set)';
+            throw new Error(`Server offline (${apiUrl}): ${e?.message || e}`);
         }
     },
 
