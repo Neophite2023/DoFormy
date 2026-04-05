@@ -220,6 +220,32 @@ h1 {
     }
 }
 
+.sync-status-bar {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.3;
+    animation: do-fade-in 0.3s ease;
+}
+
+.sync-status-bar.warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.sync-status-bar.error {
+    background: rgba(239, 68, 68, 0.14);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes do-fade-in {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 #cards-container {
     display: flex;
     flex-direction: column;

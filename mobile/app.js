@@ -81,6 +81,24 @@ async function bootstrapMobileData() {
     return normalized;
 }
 
+function updateSyncStatusDisplay() {
+    const bar = document.getElementById('sync-status-bar');
+    if (!bar) return;
+
+    const apiUrl = DoFormyEngine.getApiUrl();
+    if (!apiUrl) {
+        bar.textContent = '⚠️ Server URL nie je nastavená. Synchronizácia je vypnutá.';
+        bar.className = 'sync-status-bar warning';
+        bar.style.display = 'block';
+    } else if (!navigator.onLine) {
+        bar.textContent = '📡 Ste offline. Dáta sa uložia len lokálne.';
+        bar.className = 'sync-status-bar warning';
+        bar.style.display = 'block';
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     currentData = await bootstrapMobileData();
 
@@ -89,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initSync();
     initNotifications();
+    updateSyncStatusDisplay();
 });
 
 function initNavigation() {
@@ -139,6 +158,7 @@ function initSync() {
             localStorage.setItem('doformy_api_url', apiUrl);
             localStorage.setItem('projecttracker_sync_base_url', apiUrl);
             DoFormyEngine.setApiUrl(apiUrl);
+            updateSyncStatusDisplay();
         } else {
             DoFormyEngine.setApiUrl(apiUrl);
         }
@@ -148,9 +168,16 @@ function initSync() {
             initUI(currentData);
             setState('sync-success');
             scheduleReset(3000);
+            updateSyncStatusDisplay();
         } catch (e) {
             setState('sync-error');
             scheduleReset(4000);
+            const bar = document.getElementById('sync-status-bar');
+            if (bar) {
+                bar.textContent = `❌ Synchronizácia zlyhala: ${e?.message || 'Server nedostupný'}`;
+                bar.className = 'sync-status-bar error';
+                bar.style.display = 'block';
+            }
             alert('Sync zlyhal: ' + (e?.message || e) + `\n\nPouzite URL: ${DoFormyEngine.getApiUrl() || '(nepripojene)'}`);
         } finally {
             btnSync.disabled = false;
@@ -183,12 +210,14 @@ function initSettings() {
             localStorage.setItem('projecttracker_sync_base_url', url);
             DoFormyEngine.setApiUrl(url);
             if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${url}`;
+            updateSyncStatusDisplay();
             alert('URL uložená.');
         } else {
             localStorage.removeItem('doformy_api_url');
             localStorage.removeItem('projecttracker_sync_base_url');
             DoFormyEngine.setApiUrl(null);
             if (currentApiUrl) currentApiUrl.textContent = 'Aktuálne: (nepripojené)';
+            updateSyncStatusDisplay();
             alert('URL vymazaná.');
         }
     };
