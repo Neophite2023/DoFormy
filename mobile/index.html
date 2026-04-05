@@ -153,26 +153,11 @@
                 <button id="btn-habit" class="btn-do">Mám splnené</button>
             </div>
         </main>
-
-        <nav class="do-nav">
-            <button class="nav-btn active" data-view="home" type="button">
-                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#i-home" xlink:href="#i-home"></use>
-                </svg>
-                <span>DoFormy</span>
-            </button>
-            <button class="nav-btn" data-view="settings" type="button">
-                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#i-settings" xlink:href="#i-settings"></use>
-                </svg>
-                <span>Nastavenia</span>
-            </button>
-        </nav>
     </div>
 
     <div id="view-settings" class="view-settings" style="display: none;">
         <h2>Nastavenia</h2>
-
+        <!-- ... (zvyšok nastavení zostáva rovnaký) ... -->
         <div class="do-card">
             <div class="card-body">
                 <h3>Vzhľad</h3>
@@ -219,6 +204,21 @@
             </div>
         </div>
     </div>
+
+    <nav class="do-nav">
+        <button class="nav-btn active" data-view="home" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#i-home" xlink:href="#i-home"></use>
+            </svg>
+            <span>DoFormy</span>
+        </button>
+        <button class="nav-btn" data-view="settings" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#i-settings" xlink:href="#i-settings"></use>
+            </svg>
+            <span>Nastavenia</span>
+        </button>
+    </nav>
 
     <script type="module" src="app.js"></script>
 </body>
