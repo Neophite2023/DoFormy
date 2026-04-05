@@ -376,28 +376,10 @@ export const DoFormyEngine = {
                 history: pushResult.history
             });
 
-            const localReset = Number(normalizedLocal.user.resetVersion) || 0;
-            const serverReset = Number(normalizedServer.user.resetVersion) || 0;
-
-            if (serverReset > localReset) {
-                this.emitEvent('syncSuccess', { source: 'server' });
-                return await this.saveData(normalizedServer, false);
-            }
-
-            const merged = this.mergeData(normalizedLocal, normalizedServer);
-
-            const mergedPushRes = await fetch(`${this.API_URL}/sync`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(merged)
-            });
-
-            if (!mergedPushRes.ok) {
-                throw new Error(`Final push failed: ${mergedPushRes.status}`);
-            }
-
-            const finalData = await this.saveData(merged, false, false);
-            this.emitEvent('syncSuccess', { source: 'merged' });
+            // Server already returns merged data from local + server state.
+            // Persisting this payload avoids client-side re-merge regressions.
+            const finalData = await this.saveData(normalizedServer, false, false);
+            this.emitEvent('syncSuccess', { source: 'server' });
             return finalData;
 
         } catch (e) {
