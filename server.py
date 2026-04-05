@@ -39,7 +39,11 @@ def log_server_event(message, exc=None):
 def normalize_sync_meta(record):
     source = record if isinstance(record, dict) else {}
     sync_meta = source.get("sync_meta") or {}
-    fallback = int(source.get("last_updated") or 0)
+    
+    # DÔLEŽITÉ: Nepoužívame last_updated ako fallback pre polia.
+    # To zabráni tomu, aby zmena v krokoch na desktope (ktorá posunie last_updated)
+    # prepísala skutočnú zmenu vody na mobile.
+    fallback = 0
 
     def sync_time(key):
         value = sync_meta.get(key)

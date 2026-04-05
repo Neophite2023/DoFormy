@@ -207,7 +207,11 @@ export const DoFormyEngine = {
     normalizeSyncMeta(record) {
         const source = record && typeof record === 'object' ? record : {};
         const syncMeta = source.sync_meta && typeof source.sync_meta === 'object' ? source.sync_meta : {};
-        const fallback = Number(source.last_updated) || 0;
+        
+        // DÔLEŽITÉ: Nepoužívame last_updated ako fallback, lebo to spôsobuje, 
+        // že zmena v jednom poli (napr. kroky) "zdanlivo" zaktualizuje aj ostatné polia.
+        // Ak kľúč v sync_meta chýba, vrátime 0, čo znamená "staré dáta".
+        const fallback = 0;
 
         return {
             steps: syncMeta.steps === undefined || syncMeta.steps === null ? fallback : Number(syncMeta.steps),

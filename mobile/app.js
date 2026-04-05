@@ -53,9 +53,32 @@ async function bootstrapMobileData() {
         }
     }
 
-    const normalizedLocal = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
+    let normalized = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
 
-    return normalizedLocal;
+    // Tiché stiahnutie dát zo servera pri štarte (len ak máme URL)
+    // Toto zabezpečí, že mobil bude mať aktuálnu resetVersion a ciele (stepsGoal).
+    if (DoFormyEngine.getApiUrl()) {
+        try {
+            const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
+            if (serverData && serverData.user) {
+                // Zlúčime len používateľa, históriu necháme na manuálnu synchronizáciu,
+                // aby sme predišli strate neuložených lokálnych zmien hneď pri štarte.
+                normalized.user = DoFormyEngine.mergeUser(normalized.user, serverData.user);
+                
+                // Ak server hlási vyšší resetVersion, musíme sa podriadiť
+                if ((Number(serverData.user.resetVersion) || 0) > (Number(localData?.user?.resetVersion) || 0)) {
+                    console.log('DoFormy: Server hlási reset databázy, aktualizujem lokálny stav.');
+                    normalized = DoFormyEngine.normalizeData(serverData);
+                }
+                
+                localStorage.setItem('doformy_data', JSON.stringify(normalized));
+            }
+        } catch (e) {
+            console.warn('DoFormy: Tiché načítanie profilu zlyhalo (offline?)');
+        }
+    }
+
+    return normalized;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
