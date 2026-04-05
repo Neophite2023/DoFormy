@@ -51,8 +51,31 @@ export const DoFormyEngine = {
         const syncUrl = params.get('sync');
         if (syncUrl) {
             const apiUrl = this.normalizeApiUrl(syncUrl);
-            this.setApiUrl(apiUrl);
-            if (apiUrl) localStorage.setItem('projecttracker_sync_base_url', apiUrl);
+            let acceptSyncUrl = true;
+
+            try {
+                if (apiUrl) {
+                    const parsed = new URL(apiUrl);
+                    const host = (parsed.hostname || '').toLowerCase();
+                    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+                        acceptSyncUrl = false;
+                    }
+                }
+            } catch (e) {
+                acceptSyncUrl = false;
+            }
+
+            if (acceptSyncUrl && apiUrl) {
+                this.setApiUrl(apiUrl);
+                localStorage.setItem('projecttracker_sync_base_url', apiUrl);
+                return;
+            }
+
+            const fallbackStored = localStorage.getItem('projecttracker_sync_base_url') || localStorage.getItem('doformy_api_url');
+            if (fallbackStored) {
+                this.setApiUrl(fallbackStored);
+                return;
+            }
             return;
         }
 

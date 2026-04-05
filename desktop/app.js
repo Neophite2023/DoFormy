@@ -199,8 +199,34 @@ function setupQR() {
     if (!btn || !modal) return;
 
     const githubPagesUrl = 'https://neophite2023.github.io/DoFormy/mobile/index.html';
-    const serverOrigin = window.location.origin;
-    const qrText = `${githubPagesUrl}?sync=${encodeURIComponent(serverOrigin)}`;
+    const isLoopbackHost = host => host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    let syncBaseUrl = null;
+
+    try {
+        const current = new URL(window.location.href);
+        if (!isLoopbackHost((current.hostname || '').toLowerCase())) {
+            syncBaseUrl = current.origin;
+        }
+    } catch (e) {
+        syncBaseUrl = null;
+    }
+
+    if (!syncBaseUrl) {
+        const storedApi = localStorage.getItem('projecttracker_sync_base_url') || localStorage.getItem('doformy_api_url') || '';
+        const withoutApi = storedApi.replace(/\/api$/, '');
+        try {
+            const stored = new URL(withoutApi);
+            if (!isLoopbackHost((stored.hostname || '').toLowerCase())) {
+                syncBaseUrl = stored.origin;
+            }
+        } catch (e) {
+            syncBaseUrl = null;
+        }
+    }
+
+    const qrText = syncBaseUrl
+        ? `${githubPagesUrl}?sync=${encodeURIComponent(syncBaseUrl)}`
+        : githubPagesUrl;
 
     btn.onclick = () => {
         qrContainer.innerHTML = '';
