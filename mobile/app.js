@@ -104,7 +104,7 @@ function initSync() {
         setState('syncing');
         btnSync.disabled = true;
         
-        let apiUrl = localStorage.getItem('doformy_api_url');
+        let apiUrl = DoFormyEngine.getApiUrl() || localStorage.getItem('doformy_api_url') || localStorage.getItem('projecttracker_sync_base_url');
         if (!apiUrl) {
             apiUrl = prompt('Zadajte server URL (napr. https://doma-pc.tail85a624.ts.net:8000/api):');
             if (!apiUrl) {
@@ -127,6 +127,7 @@ function initSync() {
         } catch (e) {
             setState('sync-error');
             scheduleReset(4000);
+            alert('Sync zlyhal: ' + (e?.message || e));
         } finally {
             btnSync.disabled = false;
         }
@@ -146,7 +147,7 @@ function initSettings() {
         };
     }
 
-    const savedUrl = localStorage.getItem('doformy_api_url') || '';
+    const savedUrl = localStorage.getItem('doformy_api_url') || localStorage.getItem('projecttracker_sync_base_url') || '';
     if (apiInput) apiInput.value = savedUrl;
     if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${savedUrl || '(nepripojené)'}`;
 
@@ -155,6 +156,7 @@ function initSettings() {
         if (url) {
             if (!url.endsWith('/api')) url += '/api';
             localStorage.setItem('doformy_api_url', url);
+            localStorage.setItem('projecttracker_sync_base_url', url);
             DoFormyEngine.setApiUrl(url);
             if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${url}`;
             alert('URL uložená.');

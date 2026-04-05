@@ -3,9 +3,6 @@
  */
 export const DoFormyEngine = {
     API_URL: (() => {
-        const explicit = localStorage.getItem('doformy_api_url') || localStorage.getItem('projecttracker_sync_base_url');
-        if (explicit) return explicit;
-
         try {
             const path = window.location.pathname || '';
             if (path.includes('/desktop/')) {
@@ -14,6 +11,9 @@ export const DoFormyEngine = {
         } catch (e) {
             // ignore (non-browser env)
         }
+
+        const explicit = localStorage.getItem('doformy_api_url') || localStorage.getItem('projecttracker_sync_base_url');
+        if (explicit) return explicit;
 
         return null;
     })(),
@@ -56,6 +56,16 @@ export const DoFormyEngine = {
             return;
         }
 
+        try {
+            const path = window.location.pathname || '';
+            if (path.includes('/desktop/')) {
+                this.setApiUrl(`${window.location.origin}/api`, { persist: false });
+                return;
+            }
+        } catch (e) {
+            // ignore
+        }
+
         const explicit = localStorage.getItem('doformy_api_url');
         if (explicit) {
             this.setApiUrl(explicit);
@@ -66,15 +76,6 @@ export const DoFormyEngine = {
         if (storedUrl) {
             this.setApiUrl(storedUrl);
             return;
-        }
-
-        try {
-            const path = window.location.pathname || '';
-            if (path.includes('/desktop/')) {
-                this.setApiUrl(`${window.location.origin}/api`, { persist: false });
-            }
-        } catch (e) {
-            // ignore
         }
     },
 
