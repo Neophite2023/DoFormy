@@ -709,21 +709,25 @@ export const DoFormyEngine = {
     scheduleWorkoutNotification(hour = 8) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return false;
 
-        setInterval(() => {
+        const check = () => {
             const now = new Date();
-            if (now.getHours() === hour && now.getMinutes() === 0) {
-                const day = now.getDay();
-                const workoutDays = [1, 3, 5];
-                if (workoutDays.includes(day)) {
+            const todayStr = this.getTodayStr();
+            const lastNotif = localStorage.getItem('last_workout_notification');
+
+            if (now.getHours() === hour && lastNotif !== todayStr) {
+                if (this.isWorkoutDay()) {
                     new Notification('DoFormy - Tréning', {
                         body: 'Dnes je tréningový deň! 💪',
                         icon: '../assets/icon-192.png',
                         tag: 'workout-reminder'
                     });
+                    localStorage.setItem('last_workout_notification', todayStr);
                 }
             }
-        }, 60000);
+        };
 
+        check(); // Run immediately on start
+        setInterval(check, 60000); // Check every minute
         return true;
     },
 
