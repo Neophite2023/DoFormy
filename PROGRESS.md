@@ -1,6 +1,21 @@
 # DoFormy - Progress dokumentácia
 
-## Dátum: 5. apríl 2026 (Dnešné zmeny)
+## Dátum: 12. apríl 2026 (Dnešné zmeny)
+
+---
+
+## Čo sme vytvorili a opravili
+
+### 1. Globálny Reset dát (v20)
+- **Logika:** Implementovaný endpoint `/api/reset` na serveri, ktorý transakčne vymaže tabuľku `history` a zvýši `resetVersion` v tabuľke `user`.
+- **Sync:** Engine teraz deteguje vyššiu `resetVersion` zo servera a automaticky zahodí lokálnu históriu, čím zabráni "oživeniu" starých dát.
+- **Mobile UI:** Pridaná nová karta v nastaveniach s deštruktívnym tlačidlom "Resetovať systém".
+- **Safari/iOS Fix:** Opravené CORS hlavičky (`Access-Control-Max-Age`, `Authorization`) a obnovené HTTPS pre plnú kompatibilitu s iPhone.
+- **Bezpečnosť:** Implementované potvrdzovacie okno pred vykonaním resetu.
+
+---
+
+## Dátum: 5. apríl 2026
 
 ---
 

@@ -61,11 +61,17 @@ async function bootstrapMobileData() {
         try {
             const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
             if (serverData && serverData.user) {
-                // Zlúčime používateľa, aby sme mali aktuálnu resetVersion a exp.
-                normalized.user = DoFormyEngine.mergeUser(normalized.user, serverData.user);
-                
-                // DÔLEŽITÉ: Už tu neprepisujeme normalized celými serverovými dátami (ani pri resete),
-                // aby sme nezhodili neodoslané lokálne zmeny v histórii pred manuálnym Syncom.
+                const serverReset = Number(serverData.user.resetVersion) || 0;
+                const localReset = Number(normalized.user.resetVersion) || 0;
+
+                if (serverReset > localReset) {
+                    console.log('DoFormy: Detegovaný globálny reset dát zo servera.');
+                    // Hard reset: zahodíme všetko lokálne a použijeme čistý stav zo servera
+                    normalized = serverData;
+                } else {
+                    // Bežný tichý update profilu (XP, level, verzia)
+                    normalized.user = DoFormyEngine.mergeUser(normalized.user, serverData.user);
+                }
                 
                 localStorage.setItem('doformy_data', JSON.stringify(normalized));
             }
