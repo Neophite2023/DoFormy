@@ -411,13 +411,11 @@ export const DoFormyEngine = {
     },
 
     async resetServer(options = {}) {
-        const { startDate = new Date().toISOString() } = options;
         if (!this.API_URL) throw new Error('Server URL not set');
 
+        // Zjednodušené volanie bez body a complex headers pre Safari
         const res = await fetch(`${this.API_URL}/reset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ startDate })
+            method: 'POST'
         });
 
         if (res.status === 409) throw new Error('Sync in progress');
