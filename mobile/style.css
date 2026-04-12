@@ -630,3 +630,13 @@ h1 {
     transform: translate(20px, -50%);
     background: #ffffff;
 }
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.btn-danger:active {
+    background: rgba(239, 68, 68, 0.2) !important;
+}

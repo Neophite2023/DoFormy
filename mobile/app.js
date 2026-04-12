@@ -245,6 +245,38 @@ function initSettings() {
             alert('Chyba: ' + e.message);
         }
     };
+
+    const btnResetAll = document.getElementById('btn-reset-all');
+    if (btnResetAll) {
+        btnResetAll.onclick = async () => {
+            if (!DoFormyEngine.getApiUrl()) {
+                alert('Reset vyžaduje pripojenie k serveru, aby sa dáta vymazali všade.');
+                return;
+            }
+
+            const confirmed = confirm('Naozaj chcete vymazať VŠETKY dáta? Táto akcia sa nedá vrátiť.');
+            if (!confirmed) return;
+
+            const secondConfirmation = prompt('Napíšte "RESET" pre potvrdenie vymazania:');
+            if (secondConfirmation !== 'RESET') {
+                if (secondConfirmation !== null) alert('Reset zrušený (nesprávne potvrdenie).');
+                return;
+            }
+
+            try {
+                btnResetAll.disabled = true;
+                btnResetAll.textContent = 'Resetujem...';
+                
+                currentData = await DoFormyEngine.resetServer();
+                alert('Systém bol úspešne zresetovaný na všetkých zariadeniach.');
+                location.reload();
+            } catch (e) {
+                alert('Reset zlyhal: ' + e.message);
+                btnResetAll.disabled = false;
+                btnResetAll.textContent = 'Resetovať systém';
+            }
+        };
+    }
 }
 
 async function initNotifications() {

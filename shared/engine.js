@@ -410,12 +410,39 @@ export const DoFormyEngine = {
         return await this.saveData(merged, true, true);
     },
 
+    async resetServer(options = {}) {
+        const { startDate = new Date().toISOString() } = options;
+        if (!this.API_URL) throw new Error('Server URL not set');
+
+        const res = await fetch(`${this.API_URL}/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ startDate })
+        });
+
+        if (res.status === 409) throw new Error('Sync in progress');
+        if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+
+        const result = await res.json();
+        const normalized = this.normalizeData(result);
+        return await this.saveData(normalized, false);
+    },
+
     mergeData(localData, serverData) {
         if (!serverData || !serverData.user) return this.normalizeData(localData);
         if (!localData || !localData.user) return this.normalizeData(serverData);
 
         const normalizedLocal = this.normalizeData(localData);
         const normalizedServer = this.normalizeData(serverData);
+
+        const localReset = Number(normalizedLocal.user.resetVersion) || 0;
+        const serverReset = Number(normalizedServer.user.resetVersion) || 0;
+
+        if (serverReset > localReset) {
+            // Server signaled a reset; drop local data to avoid repopulating server with stale history.
+            return normalizedServer;
+        }
+
         const merged = {
             user: this.mergeUser(normalizedLocal.user, normalizedServer.user),
             history: {}

@@ -86,9 +86,11 @@ function refreshUI() {
     renderKPIBar(currentData);
     renderSidebarWorkout(currentData);
     
-    // Výpočet jednoduchého hashu dát pre kontrolu zmien
+    // Výpočet hashu dát pre kontrolu zmien (zohľadňuje používateľa, počet dní aj časy aktualizácií)
+    const historyEntries = Object.values(currentData.history);
     const currentHash = JSON.stringify(currentData.user) + 
-                       Object.values(currentData.history).reduce((acc, r) => acc + (r.last_updated || 0), 0);
+                       historyEntries.length + 
+                       historyEntries.reduce((acc, r) => acc + (r.last_updated || 0), 0);
     
     if (currentHash !== lastRenderedHash) {
         renderCharts(currentData);

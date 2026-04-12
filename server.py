@@ -369,6 +369,73 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             threading.Thread(target=kill_self).start()
             return
 
+        if self.path == "/api/reset":
+            if DoFormyHandler.is_syncing:
+                self.send_response(409)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "conflict", "message": "Sync in progress"}).encode("utf-8"))
+                return
+
+            DoFormyHandler.is_syncing = True
+            conn = None
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
+                start_date = payload.get("startDate") or datetime.utcnow().isoformat() + "Z"
+
+                conn = sqlite3.connect(DB_FILE)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                # Get current user to keep stepsGoal
+                cursor.execute("SELECT * FROM user WHERE id = 1")
+                existing_user = cursor.fetchone()
+                
+                reset_version = 1
+                steps_goal = 6000
+                if existing_user:
+                    reset_version = (int(existing_user["resetVersion"] or 0)) + 1
+                    steps_goal = int(existing_user["stepsGoal"] or 6000)
+
+                # Reset User
+                cursor.execute(
+                    "UPDATE user SET exp = 0, levelName = ?, stepsGoal = ?, startDate = ?, resetVersion = ? WHERE id = 1",
+                    (DEFAULT_LEVEL_NAME, steps_goal, start_date, reset_version),
+                )
+
+                # Clear History
+                cursor.execute("DELETE FROM history")
+
+                conn.commit()
+
+                # Fetch new state for response
+                cursor.execute("SELECT * FROM user WHERE id = 1")
+                user_data = dict(cursor.fetchone())
+
+                self.send_response(200)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "success",
+                    "user": user_data,
+                    "history": {}
+                }, ensure_ascii=False).encode("utf-8"))
+
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
+            finally:
+                if conn:
+                    conn.close()
+                DoFormyHandler.is_syncing = False
+                return
+
         if self.path == "/api/save":
             content_length = int(self.headers['Content-Length'])
             payload = json.loads(self.rfile.read(content_length))
