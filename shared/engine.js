@@ -305,9 +305,14 @@ export const DoFormyEngine = {
     autoSync(data, callback) {
         if (this._syncTimeout) clearTimeout(this._syncTimeout);
         this._syncTimeout = setTimeout(async () => {
-            console.log('DoFormy: Spúšťam automatickú synchronizáciu...');
-            const newData = await this.syncData(data);
-            if (callback) callback(newData);
+            console.log('DoFormy: Automatická synchronizácia spustená...');
+            try {
+                const newData = await this.syncNow(data);
+                if (callback) callback(newData);
+                console.log('DoFormy: Automatická synchronizácia úspešná.');
+            } catch (e) {
+                console.warn('DoFormy: Automatická synchronizácia zlyhala:', e.message);
+            }
         }, 2000);
     },
 
