@@ -64,8 +64,17 @@ async function initDesktop() {
             try {
                 // Desktop v pollingu iba sťahuje dáta (Vizualizácia)
                 const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
-                if (serverData) {
-                    currentData = DoFormyEngine.mergeData(currentData, serverData);
+                if (serverData && serverData.user) {
+                    const serverReset = Number(serverData.user.resetVersion) || 0;
+                    const localReset = Number(currentData.user.resetVersion) || 0;
+
+                    if (serverReset > localReset) {
+                        console.log('DoFormy: Detegovaný reset dát na serveri (polling).');
+                        currentData = serverData;
+                    } else {
+                        currentData = DoFormyEngine.mergeData(currentData, serverData);
+                    }
+                    
                     localStorage.setItem('doformy_data', JSON.stringify(currentData));
                     refreshUI();
                 }

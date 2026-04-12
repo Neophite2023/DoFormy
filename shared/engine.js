@@ -447,6 +447,7 @@ export const DoFormyEngine = {
 
         if (serverReset > localReset) {
             // Server signaled a reset; drop local data to avoid repopulating server with stale history.
+            console.log('DoFormy Engine: Reset detegovaný v mergeData. Zahadzujem lokálnu históriu.');
             return normalizedServer;
         }
 
