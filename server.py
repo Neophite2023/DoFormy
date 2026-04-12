@@ -372,6 +372,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if clean_path == "/api/reset":
+            log_server_event("DEBUG: Received /api/reset request")
             if DoFormyHandler.is_syncing:
                 self.send_response(409)
                 self.send_header("Content-type", "application/json; charset=utf-8")
@@ -383,9 +384,12 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             DoFormyHandler.is_syncing = True
             conn = None
             try:
+                # Read body just to be sure we clear the socket
                 content_length = int(self.headers.get("Content-Length", 0))
-                payload = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
-                start_date = payload.get("startDate") or datetime.utcnow().isoformat() + "Z"
+                if content_length > 0:
+                    self.rfile.read(content_length)
+
+                start_date = datetime.utcnow().isoformat() + "Z"
 
                 conn = sqlite3.connect(DB_FILE)
                 conn.row_factory = sqlite3.Row
@@ -411,6 +415,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 cursor.execute("DELETE FROM history")
 
                 conn.commit()
+                log_server_event(f"SUCCESS: System reset (version {reset_version})")
 
                 # Fetch new state for response
                 cursor.execute("SELECT * FROM user WHERE id = 1")
@@ -427,6 +432,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 }, ensure_ascii=False).encode("utf-8"))
 
             except Exception as e:
+                log_server_event(f"ERROR: Reset failed: {str(e)}")
                 self.send_response(500)
                 self.send_header("Content-type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
@@ -494,8 +500,9 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+            return
 
-        if self.path == "/api/sync":
+        if clean_path == "/api/sync":
             if DoFormyHandler.is_syncing:
                 self.send_response(409)
                 self.send_header("Content-type", "application/json; charset=utf-8")

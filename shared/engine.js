@@ -413,17 +413,26 @@ export const DoFormyEngine = {
     async resetServer(options = {}) {
         if (!this.API_URL) throw new Error('Server URL not set');
 
-        // Zjednodušené volanie bez body a complex headers pre Safari
-        const res = await fetch(`${this.API_URL}/reset`, {
-            method: 'POST'
-        });
+        try {
+            // Najprv health check (Safari to má rado ako preflight)
+            await this.checkServerHealth();
 
-        if (res.status === 409) throw new Error('Sync in progress');
-        if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+            const res = await fetch(`${this.API_URL}/reset`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: true })
+            });
 
-        const result = await res.json();
-        const normalized = this.normalizeData(result);
-        return await this.saveData(normalized, false);
+            if (res.status === 409) throw new Error('Sync in progress');
+            if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+
+            const result = await res.json();
+            const normalized = this.normalizeData(result);
+            return await this.saveData(normalized, false);
+        } catch (e) {
+            console.error('Reset fetch error:', e);
+            throw e;
+        }
     },
 
     mergeData(localData, serverData) {
