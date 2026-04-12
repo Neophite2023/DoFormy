@@ -58,6 +58,7 @@ async function initDesktop() {
         setupQR();
         setupQuit();
         setupNavigation();
+        setupHardReset();
 
         setInterval(async () => {
             if (!navigator.onLine || DoFormyEngine.isSyncing) return;
@@ -545,4 +546,15 @@ function renderMilestone(data) {
     } else {
         elMilestone.textContent = 'Dosiahli ste vrchol. Ste Skala.';
     }
+}
+
+function setupHardReset() {
+    const btn = document.getElementById('btn-desktop-hard-reset');
+    if (!btn) return;
+    btn.onclick = () => {
+        if (confirm('Naozaj chcete vymazať celú lokálnu históriu na tomto počítači? Dáta sa znovu stiahnu zo servera.')) {
+            localStorage.removeItem('doformy_data');
+            location.reload();
+        }
+    };
 }
