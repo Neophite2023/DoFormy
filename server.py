@@ -279,7 +279,8 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
 
     def do_GET(self):
@@ -607,10 +608,17 @@ class DoFormyThreadingHTTPServer(http.server.ThreadingHTTPServer):
 
 def create_http_server():
     server = DoFormyThreadingHTTPServer(("0.0.0.0", PORT), DoFormyHandler)
-    
-    # SSL disabled for debugging "Load failed" on iPhone
-    log_server_event(f"DoFormy Server running on HTTP (http://{HOST_NAME}:{PORT}) - SSL DISABLED")
-    
+    cert_path = "certs/cert.crt"
+    key_path = "certs/cert.key"
+
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=cert_path, keyfile=key_path)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        log_server_event(f"DoFormy Server running on HTTPS (https://{HOST_NAME}:{PORT})")
+    else:
+        log_server_event(f"Warning: certificates not found in {cert_path}. Running on HTTP.")
+
     return server
 
 
