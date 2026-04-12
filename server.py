@@ -354,7 +354,9 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(b"File not found")
 
     def do_POST(self):
-        if self.path == "/api/quit":
+        clean_path = self.path.split('?')[0].rstrip('/')
+
+        if clean_path == "/api/quit":
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -369,7 +371,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
             threading.Thread(target=kill_self).start()
             return
 
-        if self.path == "/api/reset":
+        if clean_path == "/api/reset":
             if DoFormyHandler.is_syncing:
                 self.send_response(409)
                 self.send_header("Content-type", "application/json; charset=utf-8")
@@ -436,7 +438,7 @@ class DoFormyHandler(http.server.SimpleHTTPRequestHandler):
                 DoFormyHandler.is_syncing = False
                 return
 
-        if self.path == "/api/save":
+        if clean_path == "/api/save":
             content_length = int(self.headers['Content-Length'])
             payload = json.loads(self.rfile.read(content_length))
             incoming_user = payload.get("user") or {}

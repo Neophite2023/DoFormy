@@ -257,12 +257,6 @@ function initSettings() {
             const confirmed = confirm('Naozaj chcete vymazať VŠETKY dáta? Táto akcia sa nedá vrátiť.');
             if (!confirmed) return;
 
-            const secondConfirmation = prompt('Napíšte "RESET" pre potvrdenie vymazania:');
-            if (secondConfirmation !== 'RESET') {
-                if (secondConfirmation !== null) alert('Reset zrušený (nesprávne potvrdenie).');
-                return;
-            }
-
             try {
                 btnResetAll.disabled = true;
                 btnResetAll.textContent = 'Resetujem...';
