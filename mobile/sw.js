@@ -1,14 +1,10 @@
-const CACHE_NAME = 'doformy-v24';
+const CACHE_NAME = 'doformy-v25';
 const APP_ASSETS = [
     './index.html',
     './style.css',
     './manifest.json',
     './app.js',
-    '../shared/engine.js',
-    '../assets/icon-192.png',
-    '../assets/icon-512.png',
-    '../assets/icon-1024.png',
-    '../assets/apple-touch-icon.png'
+    '../shared/engine.js'
 ];
 
 self.addEventListener('install', event => {
