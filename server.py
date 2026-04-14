@@ -54,6 +54,7 @@ def normalize_sync_meta(record):
         "workout": sync_time("workout"),
         "weight": sync_time("weight"),
         "water": sync_time("water"),
+        "water_reset": sync_time("water_reset"),
     }
 
 
@@ -142,11 +143,21 @@ def merge_day_record(local_record, server_record):
     local_meta = local["sync_meta"]
     server_meta = server["sync_meta"]
 
+    local_water_reset = local_meta.get("water_reset", 0)
+    server_water_reset = server_meta.get("water_reset", 0)
+
+    if local_water_reset > server_water_reset:
+        merged_water = local["water"]
+    elif server_water_reset > local_water_reset:
+        merged_water = server["water"]
+    else:
+        merged_water = max(local["water"], server["water"])
+
     return {
         "steps": max(local["steps"], server["steps"]),
         "workout": merge_workout(local["workout"], server["workout"]),
         "weight": pick_latest_value(local["weight"], server["weight"], local_meta["weight"], server_meta["weight"]),
-        "water": pick_latest_value(local["water"], server["water"], local_meta["water"], server_meta["water"]),
+        "water": merged_water,
         "last_updated": max(
             local["last_updated"],
             server["last_updated"],
@@ -154,16 +165,19 @@ def merge_day_record(local_record, server_record):
             local_meta["workout"],
             local_meta["weight"],
             local_meta["water"],
+            local_water_reset,
             server_meta["steps"],
             server_meta["workout"],
             server_meta["weight"],
             server_meta["water"],
+            server_water_reset,
         ),
         "sync_meta": {
             "steps": max(local_meta["steps"], server_meta["steps"]),
             "workout": max(local_meta["workout"], server_meta["workout"]),
             "weight": max(local_meta["weight"], server_meta["weight"]),
             "water": max(local_meta["water"], server_meta["water"]),
+            "water_reset": max(local_water_reset, server_water_reset),
         },
     }
 

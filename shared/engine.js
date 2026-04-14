@@ -324,7 +324,8 @@ export const DoFormyEngine = {
             steps: syncMeta.steps === undefined || syncMeta.steps === null ? fallback : Number(syncMeta.steps),
             workout: syncMeta.workout === undefined || syncMeta.workout === null ? fallback : Number(syncMeta.workout),
             weight: syncMeta.weight === undefined || syncMeta.weight === null ? fallback : Number(syncMeta.weight),
-            water: syncMeta.water === undefined || syncMeta.water === null ? fallback : Number(syncMeta.water)
+            water: syncMeta.water === undefined || syncMeta.water === null ? fallback : Number(syncMeta.water),
+            water_reset: syncMeta.water_reset === undefined || syncMeta.water_reset === null ? fallback : Number(syncMeta.water_reset)
         };
     },
 
@@ -362,6 +363,17 @@ export const DoFormyEngine = {
         if (localTime > serverTime) return localValue;
         if (serverTime > localTime) return serverValue;
         return localValue;
+    },
+
+    mergeWaterValue(localRecord, serverRecord) {
+        const local = this.normalizeHistoryRecord(localRecord);
+        const server = this.normalizeHistoryRecord(serverRecord);
+        const localReset = local.sync_meta.water_reset || 0;
+        const serverReset = server.sync_meta.water_reset || 0;
+
+        if (localReset > serverReset) return local.water || 0;
+        if (serverReset > localReset) return server.water || 0;
+        return Math.max(local.water || 0, server.water || 0);
     },
 
     async getData(options = {}) {
@@ -626,12 +638,7 @@ export const DoFormyEngine = {
                 localMeta.weight,
                 serverMeta.weight
             ),
-            water: this.pickLatestValue(
-                normalizedLocal.water,
-                normalizedServer.water,
-                localMeta.water,
-                serverMeta.water
-            ),
+            water: this.mergeWaterValue(normalizedLocal, normalizedServer),
             last_updated: Math.max(
                 normalizedLocal.last_updated || 0,
                 normalizedServer.last_updated || 0,
@@ -639,16 +646,19 @@ export const DoFormyEngine = {
                 localMeta.workout,
                 localMeta.weight,
                 localMeta.water,
+                localMeta.water_reset || 0,
                 serverMeta.steps,
                 serverMeta.workout,
                 serverMeta.weight,
-                serverMeta.water
+                serverMeta.water,
+                serverMeta.water_reset || 0
             ),
             sync_meta: {
                 steps: Math.max(localMeta.steps, serverMeta.steps),
                 workout: Math.max(localMeta.workout, serverMeta.workout),
                 weight: Math.max(localMeta.weight, serverMeta.weight),
-                water: Math.max(localMeta.water, serverMeta.water)
+                water: Math.max(localMeta.water, serverMeta.water),
+                water_reset: Math.max(localMeta.water_reset || 0, serverMeta.water_reset || 0)
             }
         };
     },
@@ -756,14 +766,19 @@ export const DoFormyEngine = {
 
     logWater(data, date, amount, reset = false) {
         const record = this.ensureHistoryRecord(data, date);
+        const timestamp = Date.now();
 
         if (reset) {
             record.water = 0;
+            if (!record.sync_meta || typeof record.sync_meta !== 'object') {
+                record.sync_meta = {};
+            }
+            record.sync_meta.water_reset = timestamp;
         } else {
             record.water = (record.water || 0) + amount;
         }
 
-        this.touchHistoryField(record, 'water');
+        this.touchHistoryField(record, 'water', timestamp);
         return data;
     },
 
