@@ -124,7 +124,8 @@ async function bootstrapMobileData() {
 
     const localData = DoFormyEngine.readStoredJson(DoFormyEngine.DATA_STORAGE_KEY, null);
 
-    let normalized = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
+    return DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
+    /*
 
     // Tiché stiahnutie dát zo servera pri štarte (len ak máme URL)
     // Toto zabezpečí, že mobil bude mať aktuálnu resetVersion a ciele (stepsGoal).
@@ -153,6 +154,34 @@ async function bootstrapMobileData() {
     }
 
     return normalized;
+    */
+}
+
+async function refreshMobileProfileFromServer() {
+    if (!DoFormyEngine.getApiUrl()) return;
+
+    try {
+        const serverData = await DoFormyEngine.getData({ fallbackToLocal: false });
+        if (!serverData || !serverData.user) return;
+
+        const serverReset = Number(serverData.user.resetVersion) || 0;
+        const localReset = Number(currentData?.user?.resetVersion) || 0;
+
+        if (serverReset > localReset) {
+            currentData = DoFormyEngine.normalizeData(serverData);
+        } else {
+            const merged = DoFormyEngine.normalizeData(currentData || DoFormyEngine.getInitialData());
+            merged.user = DoFormyEngine.mergeUser(merged.user, serverData.user);
+            currentData = merged;
+        }
+
+        currentData = DoFormyEngine.persistLocalData(currentData, { dirty: false });
+        DoFormyEngine.markSyncSuccess();
+        initUI(currentData);
+        refreshStatusUi();
+    } catch (e) {
+        console.warn('DoFormy: Tiche nacitanie profilu zlyhalo (offline?)');
+    }
 }
 
 function updateSyncStatusDisplay() {
@@ -219,6 +248,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('offline', refreshStatusUi);
     window.addEventListener('syncSuccess', refreshStatusUi);
     window.addEventListener('syncError', refreshStatusUi);
+
+    refreshMobileProfileFromServer();
 });
 
 function initNavigation() {
