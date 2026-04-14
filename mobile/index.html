@@ -164,6 +164,33 @@
 
         <div class="do-card">
             <div class="card-body">
+                <h3>Lokálne uloženie</h3>
+                <p class="settings-desc">Záznamy sa ukladajú do localStorage v tomto iPhone ešte pred syncom na server.</p>
+                <div class="storage-status-grid">
+                    <div class="storage-status-row">
+                        <span>Úložisko</span>
+                        <strong id="storage-availability">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Posledný lokálny zápis</span>
+                        <strong id="storage-last-save">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Posledný sync</span>
+                        <strong id="storage-last-sync">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Čaká na sync</span>
+                        <strong id="storage-pending">-</strong>
+                    </div>
+                </div>
+                <p id="storage-detail" class="settings-desc"></p>
+                <p id="storage-last-error" class="storage-error" style="display:none"></p>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
                 <h3>Server URL</h3>
                 <p class="settings-desc">Zadajte IP adresu servera (napr. Tailscale)</p>
                 <div class="api-input-row">

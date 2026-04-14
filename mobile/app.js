@@ -39,19 +39,90 @@ initTheme();
 
 let currentData = null;
 
+function formatStatusTime(timestamp) {
+    if (!timestamp) return 'zatial nie';
+
+    try {
+        return new Intl.DateTimeFormat('sk-SK', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(new Date(timestamp));
+    } catch (e) {
+        return new Date(timestamp).toLocaleString('sk-SK');
+    }
+}
+
+function renderStorageStatus() {
+    const status = DoFormyEngine.getStorageStatus();
+    const availability = document.getElementById('storage-availability');
+    const lastSave = document.getElementById('storage-last-save');
+    const lastSync = document.getElementById('storage-last-sync');
+    const pending = document.getElementById('storage-pending');
+    const detail = document.getElementById('storage-detail');
+    const error = document.getElementById('storage-last-error');
+
+    if (availability) {
+        availability.textContent = status.storageAvailable ? 'Pripravene' : 'Chyba';
+    }
+
+    if (lastSave) {
+        lastSave.textContent = formatStatusTime(status.lastLocalSaveAt);
+    }
+
+    if (lastSync) {
+        lastSync.textContent = formatStatusTime(status.lastSyncAt);
+    }
+
+    if (pending) {
+        pending.textContent = status.dirty ? 'Ano' : 'Nie';
+    }
+
+    if (detail) {
+        if (!status.apiUrl) {
+            detail.textContent = 'Server URL nie je nastavena. Data ostavaju len v tomto iPhone.';
+        } else if (!status.online) {
+            detail.textContent = 'Ste offline. Zmeny sa ukladaju do iPhonu a na server pojdu neskor.';
+        } else if (status.dirty) {
+            detail.textContent = 'Na zariadeni su lokalne zmeny, ktore este neboli odoslane na server.';
+        } else if (status.lastSyncAt) {
+            detail.textContent = 'Lokalne data su zapisane a posledny sync prebehol uspesne.';
+        } else {
+            detail.textContent = 'Lokalne ulozisko je pripravene, ale este neprebehol ziadny sync.';
+        }
+    }
+
+    if (error) {
+        if (status.lastStorageError) {
+            error.textContent = `Chyba uloziska: ${status.lastStorageError}`;
+            error.style.display = 'block';
+        } else if (status.lastSyncStatus === 'error' && status.lastError) {
+            error.textContent = `Posledna chyba synchronizacie: ${status.lastError}`;
+            error.style.display = 'block';
+        } else {
+            error.textContent = '';
+            error.style.display = 'none';
+        }
+    }
+}
+
+function refreshStatusUi() {
+    updateSyncStatusDisplay();
+    renderStorageStatus();
+}
+
+function handlePersistenceError(error) {
+    console.error('DoFormy: Persistence failed', error);
+    refreshStatusUi();
+    alert(`Lokalne ulozenie zlyhalo: ${error?.message || error}`);
+}
+
 async function bootstrapMobileData() {
     DoFormyEngine.initSync();
 
-    const localRaw = localStorage.getItem('doformy_data');
-    let localData = null;
-
-    if (localRaw) {
-        try {
-            localData = JSON.parse(localRaw);
-        } catch (e) {
-            localData = null;
-        }
-    }
+    const localData = DoFormyEngine.readStoredJson(DoFormyEngine.DATA_STORAGE_KEY, null);
 
     let normalized = DoFormyEngine.normalizeData(localData || DoFormyEngine.getInitialData());
 
@@ -73,7 +144,8 @@ async function bootstrapMobileData() {
                     normalized.user = DoFormyEngine.mergeUser(normalized.user, serverData.user);
                 }
                 
-                localStorage.setItem('doformy_data', JSON.stringify(normalized));
+                normalized = DoFormyEngine.persistLocalData(normalized, { dirty: false });
+                DoFormyEngine.markSyncSuccess();
             }
         } catch (e) {
             console.warn('DoFormy: Tiché načítanie profilu zlyhalo (offline?)');
@@ -88,17 +160,49 @@ function updateSyncStatusDisplay() {
     if (!bar) return;
 
     const apiUrl = DoFormyEngine.getApiUrl();
-    if (!apiUrl) {
-        bar.textContent = '⚠️ Server URL nie je nastavená. Synchronizácia je vypnutá.';
-        bar.className = 'sync-status-bar warning';
+    const status = DoFormyEngine.getStorageStatus();
+    const lastSave = formatStatusTime(status.lastLocalSaveAt);
+
+    if (!status.storageAvailable) {
+        bar.textContent = `Lokalne ulozenie zlyhalo: ${status.lastStorageError || 'neznama chyba'}`;
+        bar.className = 'sync-status-bar error';
         bar.style.display = 'block';
-    } else if (!navigator.onLine) {
-        bar.textContent = '📡 Ste offline. Dáta sa uložia len lokálne.';
-        bar.className = 'sync-status-bar warning';
-        bar.style.display = 'block';
-    } else {
-        bar.style.display = 'none';
+        return;
     }
+
+    if (status.lastSyncStatus === 'error' && status.lastError && apiUrl) {
+        bar.textContent = `Synchronizacia zlyhala: ${status.lastError}. Posledny lokalny zapis: ${lastSave}.`;
+        bar.className = 'sync-status-bar error';
+        bar.style.display = 'block';
+        return;
+    }
+
+    if (!apiUrl) {
+        bar.textContent = status.lastLocalSaveAt
+            ? `Server URL nie je nastavena. Posledny lokalny zapis do iPhonu: ${lastSave}.`
+            : 'Server URL nie je nastavena. Synchronizacia je vypnuta.';
+        bar.className = 'sync-status-bar warning';
+        bar.style.display = 'block';
+        return;
+    }
+
+    if (!navigator.onLine) {
+        bar.textContent = status.lastLocalSaveAt
+            ? `Ste offline. Posledny lokalny zapis do iPhonu: ${lastSave}.`
+            : 'Ste offline. Data sa ulozia len lokalne.';
+        bar.className = 'sync-status-bar warning';
+        bar.style.display = 'block';
+        return;
+    }
+
+    if (status.dirty) {
+        bar.textContent = `Mate lokalne zmeny cakajuce na sync. Posledny zapis: ${lastSave}.`;
+        bar.className = 'sync-status-bar warning';
+        bar.style.display = 'block';
+        return;
+    }
+
+    bar.style.display = 'none';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -109,7 +213,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initSync();
     initNotifications();
-    updateSyncStatusDisplay();
+    refreshStatusUi();
+
+    window.addEventListener('online', refreshStatusUi);
+    window.addEventListener('offline', refreshStatusUi);
+    window.addEventListener('syncSuccess', refreshStatusUi);
+    window.addEventListener('syncError', refreshStatusUi);
 });
 
 function initNavigation() {
@@ -160,7 +269,7 @@ function initSync() {
             localStorage.setItem('doformy_api_url', apiUrl);
             localStorage.setItem('projecttracker_sync_base_url', apiUrl);
             DoFormyEngine.setApiUrl(apiUrl);
-            updateSyncStatusDisplay();
+            refreshStatusUi();
         } else {
             DoFormyEngine.setApiUrl(apiUrl);
         }
@@ -170,7 +279,7 @@ function initSync() {
             initUI(currentData);
             setState('sync-success');
             scheduleReset(3000);
-            updateSyncStatusDisplay();
+            refreshStatusUi();
         } catch (e) {
             setState('sync-error');
             scheduleReset(4000);
@@ -180,6 +289,7 @@ function initSync() {
                 bar.className = 'sync-status-bar error';
                 bar.style.display = 'block';
             }
+            renderStorageStatus();
             alert('Sync zlyhal: ' + (e?.message || e) + `\n\nPouzite URL: ${DoFormyEngine.getApiUrl() || '(nepripojene)'}`);
         } finally {
             btnSync.disabled = false;
@@ -212,14 +322,14 @@ function initSettings() {
             localStorage.setItem('projecttracker_sync_base_url', url);
             DoFormyEngine.setApiUrl(url);
             if (currentApiUrl) currentApiUrl.textContent = `Aktuálne: ${url}`;
-            updateSyncStatusDisplay();
+            refreshStatusUi();
             alert('URL uložená.');
         } else {
             localStorage.removeItem('doformy_api_url');
             localStorage.removeItem('projecttracker_sync_base_url');
             DoFormyEngine.setApiUrl(null);
             if (currentApiUrl) currentApiUrl.textContent = 'Aktuálne: (nepripojené)';
-            updateSyncStatusDisplay();
+            refreshStatusUi();
             alert('URL vymazaná.');
         }
     };
@@ -231,7 +341,9 @@ function initSettings() {
                 return;
             }
             currentData = await DoFormyEngine.getData({ fallbackToLocal: false });
-            localStorage.setItem('doformy_data', JSON.stringify(currentData));
+            currentData = DoFormyEngine.persistLocalData(currentData, { dirty: false });
+            DoFormyEngine.markSyncSuccess();
+            refreshStatusUi();
             alert('Dáta stiahnuté.');
             location.reload();
         } catch (e) {
@@ -246,6 +358,7 @@ function initSettings() {
                 return;
             }
             currentData = await DoFormyEngine.syncData(currentData);
+            refreshStatusUi();
             alert('Dáta zosynchronizované.');
         } catch (e) {
             alert('Chyba: ' + e.message);
@@ -428,9 +541,14 @@ function renderWeightCard(todayStr) {
     document.getElementById('btn-weight-save').onclick = async () => {
         const newWeight = parseFloat(weightInput.value);
         if (newWeight && !isNaN(newWeight) && newWeight > 0) {
-            DoFormyEngine.logWeight(currentData, todayStr, newWeight);
-            currentData = await DoFormyEngine.saveData(currentData, false);
-            initUI(currentData);
+            try {
+                DoFormyEngine.logWeight(currentData, todayStr, newWeight);
+                currentData = await DoFormyEngine.saveData(currentData, false);
+                initUI(currentData);
+                refreshStatusUi();
+            } catch (e) {
+                handlePersistenceError(e);
+            }
         }
     };
 }
@@ -444,18 +562,28 @@ function renderWaterCard(todayStr, stats) {
     document.getElementById('water-fill').style.width = `${Math.min((currentWater / waterGoal) * 100, 100)}%`;
 
     document.getElementById('btn-water-add').onclick = async () => {
-        DoFormyEngine.logWater(currentData, todayStr, 250);
-        currentData = await DoFormyEngine.saveData(currentData, false);
-        initUI(currentData);
+        try {
+            DoFormyEngine.logWater(currentData, todayStr, 250);
+            currentData = await DoFormyEngine.saveData(currentData, false);
+            initUI(currentData);
+            refreshStatusUi();
+        } catch (e) {
+            handlePersistenceError(e);
+        }
     };
 
     const btnReset = document.getElementById('btn-water-reset');
     if (btnReset) {
         btnReset.onclick = async () => {
             if (!confirm('Vynulovať vodu na 0 ml?')) return;
-            DoFormyEngine.logWater(currentData, todayStr, 0, true);
-            currentData = await DoFormyEngine.saveData(currentData, false);
-            initUI(currentData);
+            try {
+                DoFormyEngine.logWater(currentData, todayStr, 0, true);
+                currentData = await DoFormyEngine.saveData(currentData, false);
+                initUI(currentData);
+                refreshStatusUi();
+            } catch (e) {
+                handlePersistenceError(e);
+            }
         };
     }
 }
@@ -471,23 +599,38 @@ function renderHabitCard(todayStr) {
 }
 
 async function saveWorkoutProgress(date, name, val) {
-    DoFormyEngine.logWorkoutEntry(currentData, date, name, val);
-    currentData = await DoFormyEngine.saveData(currentData, false);
+    try {
+        DoFormyEngine.logWorkoutEntry(currentData, date, name, val);
+        currentData = await DoFormyEngine.saveData(currentData, false);
+        refreshStatusUi();
+    } catch (e) {
+        handlePersistenceError(e);
+    }
 }
 
 async function addSteps(date) {
     const add = prompt('Nové kroky:', '1000');
     if (add) {
-        DoFormyEngine.logSteps(currentData, date, parseInt(add, 10));
-        currentData = await DoFormyEngine.saveData(currentData, false);
-        initUI(currentData);
+        try {
+            DoFormyEngine.logSteps(currentData, date, parseInt(add, 10));
+            currentData = await DoFormyEngine.saveData(currentData, false);
+            initUI(currentData);
+            refreshStatusUi();
+        } catch (e) {
+            handlePersistenceError(e);
+        }
     }
 }
 
 async function completeHabit(date) {
-    DoFormyEngine.logHabit(currentData, date);
-    currentData = await DoFormyEngine.saveData(currentData, false);
-    initUI(currentData);
+    try {
+        DoFormyEngine.logHabit(currentData, date);
+        currentData = await DoFormyEngine.saveData(currentData, false);
+        initUI(currentData);
+        refreshStatusUi();
+    } catch (e) {
+        handlePersistenceError(e);
+    }
 }
 
 if ('serviceWorker' in navigator) {

@@ -563,6 +563,33 @@ h1 {
     color: var(--text);
 }
 
+.storage-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.storage-status-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.storage-status-row strong {
+    color: var(--text);
+    text-align: right;
+}
+
+.storage-error {
+    margin-top: 8px;
+    color: #dc2626;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
 .api-input-row {
     display: flex;
     gap: 8px;

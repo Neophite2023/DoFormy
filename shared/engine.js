@@ -2,6 +2,9 @@
  * DoFormy Engine 2.5 - ProjectTracker sync system
  */
 export const DoFormyEngine = {
+    DATA_STORAGE_KEY: 'doformy_data',
+    SYNC_META_STORAGE_KEY: 'doformy_sync_meta',
+
     API_URL: (() => {
         try {
             const path = window.location.pathname || '';
@@ -19,6 +22,111 @@ export const DoFormyEngine = {
     })(),
     
     isSyncing: false,
+
+    readStoredJson(key, fallback = null) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn(`DoFormy: Failed to read ${key} from localStorage`, e);
+            return fallback;
+        }
+    },
+
+    writeStoredJson(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    },
+
+    getSyncMeta() {
+        const stored = this.readStoredJson(this.SYNC_META_STORAGE_KEY, {});
+        return {
+            lastLocalSaveAt: Number(stored?.lastLocalSaveAt) || 0,
+            lastSyncAt: Number(stored?.lastSyncAt) || 0,
+            dirty: !!stored?.dirty,
+            lastSyncStatus: stored?.lastSyncStatus || 'idle',
+            lastError: stored?.lastError || '',
+            storageAvailable: stored?.storageAvailable !== false,
+            lastStorageError: stored?.lastStorageError || '',
+            lastStorageErrorAt: Number(stored?.lastStorageErrorAt) || 0
+        };
+    },
+
+    persistSyncMeta(patch = {}) {
+        const nextMeta = {
+            ...this.getSyncMeta(),
+            ...patch
+        };
+
+        try {
+            this.writeStoredJson(this.SYNC_META_STORAGE_KEY, nextMeta);
+        } catch (e) {
+            console.warn('DoFormy: Failed to persist sync meta', e);
+        }
+
+        return nextMeta;
+    },
+
+    getStorageStatus() {
+        return {
+            ...this.getSyncMeta(),
+            apiUrl: this.getApiUrl(),
+            online: typeof navigator === 'undefined' ? true : navigator.onLine
+        };
+    },
+
+    persistLocalData(data, options = {}) {
+        const { dirty = true } = options;
+        const normalizedData = this.normalizeData(data);
+
+        const currentLevel = [...this.LEVELS].reverse().find(level => normalizedData.user.exp >= level.minExp) || this.LEVELS[0];
+        normalizedData.user.levelName = currentLevel.name;
+
+        try {
+            this.writeStoredJson(this.DATA_STORAGE_KEY, normalizedData);
+        } catch (e) {
+            const message = e?.message || String(e);
+            this.persistSyncMeta({
+                storageAvailable: false,
+                lastStorageError: message,
+                lastStorageErrorAt: Date.now(),
+                lastSyncStatus: 'error',
+                lastError: 'Local storage write failed'
+            });
+            throw new Error(`Nepodarilo sa uložiť dáta do lokálneho úložiska (${message}).`);
+        }
+
+        const nextSyncStatus = dirty ? 'pending' : this.getSyncMeta().lastSyncStatus;
+
+        this.persistSyncMeta({
+            lastLocalSaveAt: Date.now(),
+            dirty,
+            storageAvailable: true,
+            lastStorageError: '',
+            lastStorageErrorAt: 0,
+            lastSyncStatus: nextSyncStatus,
+            lastError: ''
+        });
+
+        return normalizedData;
+    },
+
+    markSyncSuccess() {
+        return this.persistSyncMeta({
+            lastSyncAt: Date.now(),
+            dirty: false,
+            lastSyncStatus: 'success',
+            lastError: '',
+            storageAvailable: true
+        });
+    },
+
+    markSyncError(message) {
+        return this.persistSyncMeta({
+            lastSyncStatus: 'error',
+            lastError: message || 'Sync failed'
+        });
+    },
 
     normalizeApiUrl(url) {
         if (!url) return null;
@@ -268,18 +376,13 @@ export const DoFormyEngine = {
             if (!fallbackToLocal) throw e;
 
             console.warn('Fetch from server failed, using local data', e);
-            const local = localStorage.getItem('doformy_data');
-            return this.normalizeData(local ? JSON.parse(local) : this.getInitialData());
+            const local = this.readStoredJson(this.DATA_STORAGE_KEY, this.getInitialData());
+            return this.normalizeData(local || this.getInitialData());
         }
     },
 
     async saveData(data, syncToServer = true, strictServerSync = false) {
-        const normalizedData = this.normalizeData(data);
-
-        const currentLevel = [...this.LEVELS].reverse().find(level => normalizedData.user.exp >= level.minExp) || this.LEVELS[0];
-        normalizedData.user.levelName = currentLevel.name;
-
-        localStorage.setItem('doformy_data', JSON.stringify(normalizedData));
+        const normalizedData = this.persistLocalData(data, { dirty: true });
 
         if (syncToServer && this.API_URL) {
             try {
@@ -292,8 +395,11 @@ export const DoFormyEngine = {
                 if (!res.ok) {
                     throw new Error(`Server save failed: ${res.status}`);
                 }
+
+                this.markSyncSuccess();
             } catch (e) {
                 console.warn('Sync to server failed (offline?)', e);
+                this.markSyncError(e?.message || String(e));
                 if (strictServerSync) throw e;
             }
         }
@@ -342,12 +448,14 @@ export const DoFormyEngine = {
 
         if (!this.API_URL) {
             this.emitEvent('syncError', { message: 'Server URL not set' });
+            this.markSyncError('Server URL not set');
             if (throwOnError) throw new Error('Server URL not set');
             return localData;
         }
 
         if (!navigator.onLine) {
             this.emitEvent('syncError', { message: 'Offline' });
+            this.markSyncError('Offline');
             if (throwOnError) throw new Error('Offline');
             return localData;
         }
@@ -368,6 +476,7 @@ export const DoFormyEngine = {
 
             if (pushRes.status === 409) {
                 this.emitEvent('syncError', { message: 'Sync conflict' });
+                this.markSyncError('Sync conflict');
                 if (throwOnError) throw new Error('Sync conflict');
                 return localData;
             }
@@ -384,13 +493,15 @@ export const DoFormyEngine = {
 
             // Server already returns merged data from local + server state.
             // Persisting this payload avoids client-side re-merge regressions.
-            const finalData = await this.saveData(normalizedServer, false, false);
+            const finalData = this.persistLocalData(normalizedServer, { dirty: false });
+            this.markSyncSuccess();
             this.emitEvent('syncSuccess', { source: 'server' });
             return finalData;
 
         } catch (e) {
             console.error('DoFormy: Sync failed', e);
             this.emitEvent('syncError', { message: e.message });
+            this.markSyncError(e?.message || String(e));
             if (throwOnError) throw e;
             return localData;
         } finally {
@@ -408,11 +519,12 @@ export const DoFormyEngine = {
 
         if (serverReset > localReset) {
             // Server signaled a reset; drop local test data so clients cannot repopulate the DB.
-            return await this.saveData(normalizedServer, false);
+            const saved = this.persistLocalData(normalizedServer, { dirty: false });
+            this.markSyncSuccess();
+            return saved;
         }
 
-        const merged = this.mergeData(normalizedLocal, normalizedServer);
-        return await this.saveData(merged, true, true);
+        return await this.saveData(this.mergeData(normalizedLocal, normalizedServer), true, true);
     },
 
     async resetServer(options = {}) {
@@ -433,9 +545,12 @@ export const DoFormyEngine = {
 
             const result = await res.json();
             const normalized = this.normalizeData(result);
-            return await this.saveData(normalized, false);
+            const saved = this.persistLocalData(normalized, { dirty: false });
+            this.markSyncSuccess();
+            return saved;
         } catch (e) {
             console.error('Reset fetch error:', e);
+            this.markSyncError(e?.message || String(e));
             throw e;
         }
     },
