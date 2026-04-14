@@ -55,6 +55,7 @@ async function initDesktop() {
         refreshUI();
 
         renderFullPlan(currentData.user.levelName);
+        initSyncButton();
         setupQR();
         setupQuit();
         setupNavigation();
@@ -376,6 +377,11 @@ function renderSidebarWorkout(data) {
 
 let charts = { weight: null, steps: null, water: null };
 
+function getLocalDateKey(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function renderCharts(data) {
     renderWeightChartLong(data);
     renderStepsChart(data);
@@ -438,7 +444,7 @@ function renderStepsChart(data) {
     for (let i = 13; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
-        const dStr = d.toISOString().split('T')[0];
+        const dStr = getLocalDateKey(d);
         labels.push(d.toLocaleDateString('sk-SK', { weekday: 'short' }));
         stepData.push(data.history[dStr]?.steps || 0);
     }
@@ -477,7 +483,7 @@ function renderWaterChart(data) {
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
-        const dStr = d.toISOString().split('T')[0];
+        const dStr = getLocalDateKey(d);
         labels.push(d.toLocaleDateString('sk-SK', { weekday: 'short' }));
         waterData.push(data.history[dStr]?.water || 0);
     }
@@ -520,7 +526,7 @@ function renderConsistencyGrid(data) {
     for (let i = 13; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
-        const dStr = d.toISOString().split('T')[0];
+        const dStr = getLocalDateKey(d);
         const stats = data.history[dStr] || { steps: 0, water: 0, workout: [] };
         
         let score = 0;
