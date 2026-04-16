@@ -241,7 +241,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSettings();
     initNavigation();
     initSync();
-    initNotifications();
     refreshStatusUi();
 
     window.addEventListener('online', refreshStatusUi);
@@ -420,63 +419,6 @@ function initSettings() {
                 btnResetAll.textContent = 'Resetovať systém';
             }
         };
-    }
-
-    // Notifikácie UI a logika
-    const btnRequestNotif = document.getElementById('btn-request-notif');
-    const btnTestNotif = document.getElementById('btn-test-notif');
-    const notifStatus = document.getElementById('notif-status');
-
-    const updateNotifUI = () => {
-        if (!('Notification' in window)) {
-            notifStatus.textContent = 'Stav: Nepodporované';
-            btnRequestNotif.style.display = 'none';
-            btnTestNotif.style.display = 'none';
-            return;
-        }
-        
-        if (Notification.permission === 'granted') {
-            notifStatus.textContent = 'Stav: Povolené ✅';
-            btnRequestNotif.style.display = 'none';
-        } else if (Notification.permission === 'denied') {
-            notifStatus.textContent = 'Stav: Zakázané ❌';
-            btnRequestNotif.textContent = 'Povoliť v nastaveniach';
-            btnRequestNotif.disabled = true;
-        } else {
-            notifStatus.textContent = 'Stav: Nepovolené';
-            btnRequestNotif.textContent = 'Povoliť';
-        }
-    };
-
-    if (btnRequestNotif) {
-        btnRequestNotif.onclick = async () => {
-            const permission = await Notification.requestPermission();
-            updateNotifUI();
-            if (permission === 'granted') {
-                DoFormyEngine.scheduleWorkoutNotification();
-            }
-        };
-    }
-
-    if (btnTestNotif) {
-        btnTestNotif.onclick = () => {
-            if (Notification.permission !== 'granted') {
-                alert('Najprv povoľte notifikácie.');
-                return;
-            }
-            new Notification('DoFormy - Test', {
-                body: 'Toto je testovacia notifikácia! 🚀',
-                icon: '../assets/icon-192.png'
-            });
-        };
-    }
-
-    updateNotifUI();
-}
-
-async function initNotifications() {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        DoFormyEngine.scheduleWorkoutNotification();
     }
 }
 

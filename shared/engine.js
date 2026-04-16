@@ -836,41 +836,6 @@ export const DoFormyEngine = {
         return null;
     },
 
-    async requestNotificationPermission() {
-        if (!('Notification' in window)) return 'denied';
-        return await Notification.requestPermission();
-    },
-
-    scheduleWorkoutNotification(hour = 8) {
-        if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-
-        const check = () => {
-            const now = new Date();
-            const todayStr = this.getTodayStr();
-            const lastNotif = localStorage.getItem('last_workout_notification');
-
-            if (now.getHours() === hour && lastNotif !== todayStr) {
-                if (this.isWorkoutDay()) {
-                    new Notification('DoFormy - Tréning', {
-                        body: 'Dnes je tréningový deň! 💪',
-                        icon: '../assets/icon-192.png',
-                        tag: 'workout-reminder'
-                    });
-                    localStorage.setItem('last_workout_notification', todayStr);
-                }
-            }
-        };
-
-        check(); // Run immediately on start
-        setInterval(check, 60000); // Check every minute
-        return true;
-    },
-
-    isWorkoutDay() {
-        const day = new Date().getDay();
-        return [1, 3, 5].includes(day);
-    },
-
     getTodayStr() {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

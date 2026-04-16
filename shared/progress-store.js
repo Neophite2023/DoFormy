@@ -1,5 +1,5 @@
 /**
- * Správa dát v localStorage pre FitnessPal
+ * Správa dát v localStorage pre DoFormy
  */
 export const ProgressStore = {
     KEY: 'doformy_data',
