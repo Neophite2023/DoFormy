@@ -1,10 +1,19 @@
 # DoFormy - Progress dokumentácia
 
-## Dátum: 15. apríl 2026 (Dnešné zmeny)
+## Dátum: 16. apríl 2026 (Dnešné zmeny)
 
 ---
 
 ## Čo sme vytvorili a opravili
+
+### 1. Čistka systému notifikácií
+- **Odstránenie kódu:** Kompletne odstránená logika tréningových pripomienok z HTML, JavaScriptu (mobilná aplikácia, shared engine) a Service Workera.
+- **Dôvod:** Notifikácie v čistom offline režime na iPhone (bez serverového Push) neboli stabilné a pri vypnutej aplikácii nefungovali, čo ich robilo pre používateľa bezvýznamnými.
+- **UI zmeny:** Odstránená sekcia "Notifikácie" z nastavení mobilnej aplikácie, čím sa rozhranie zjednodušilo.
+
+---
+
+## Dátum: 15. apríl 2026 (Predošlé zmeny)
 
 ### 1. Offline zápis v mobile app
 - **Startup fix:** Mobilná appka sa už pri štarte neblokuje na "tichom" načítaní dát zo servera. Najprv sa okamžite spustí z lokálnych dát a server sa skúša až na pozadí.
