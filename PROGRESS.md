@@ -10,6 +10,12 @@
 - **Zmena:** V mobile appke odstránený prefix "Karta" zo všetkých 4 kariet (Cvičenie, Váha, Voda, Pohyb).
 - **Dôvod:** Jednoduchší a modernejší dizajn bez zbytočného slova.
 
+### 2. Nový systém potvrdenia tréningu
+- **Checkbox:** Pridaný checkbox (☐/☑) vedľa každého cviku - input pre reps sa zobrazí až po zaškrtnutí.
+- **Tlačidlo:** Prázdne tlačidlo ✔ - uloží všetky odfajknuté cviky.
+- **Validácia:** Aspoň 1 checkbox musí byť zaškrtnutý (červené podfarbenie ak nie).
+- **Potvrdenie:** Zelené podfarbenie po úspešnom uložení.
+
 ---
 
 ## Dátum: 16. apríl 2026 (Predošlé zmeny)
