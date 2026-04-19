@@ -1,6 +1,18 @@
 # DoFormy - Progress dokumentácia
 
-## Dátum: 16. apríl 2026 (Dnešné zmeny)
+## Dátum: 19. apríl 2026 (Dnešné zmeny)
+
+---
+
+## Čo sme vytvorili a opravili
+
+### 1. Premenovanie karty "Sily" na "Cvičenie"
+- **Zmena:** V mobile appke premenovaná karta "Karta Sily" na "Cvičenie".
+- **Dôvod:** Všeobecnejší názov lepšie vystihuje obsah (tréningové cvičenia, nie len silové).
+
+---
+
+## Dátum: 16. apríl 2026 (Predošlé zmeny)
 
 ---
 
