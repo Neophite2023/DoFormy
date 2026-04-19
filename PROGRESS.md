@@ -6,9 +6,9 @@
 
 ## Čo sme vytvorili a opravili
 
-### 1. Premenovanie karty "Sily" na "Cvičenie"
-- **Zmena:** V mobile appke premenovaná karta "Karta Sily" na "Cvičenie".
-- **Dôvod:** Všeobecnejší názov lepšie vystihuje obsah (tréningové cvičenia, nie len silové).
+### 1. Odstránenie prefixu "Karta" z názvov kariet
+- **Zmena:** V mobile appke odstránený prefix "Karta" zo všetkých 4 kariet (Cvičenie, Váha, Voda, Pohyb).
+- **Dôvod:** Jednoduchší a modernejší dizajn bez zbytočného slova.
 
 ---
 
