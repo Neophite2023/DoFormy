@@ -449,18 +449,36 @@ function renderWorkoutCard(todayStr, stats, phase) {
     if (workout) {
         let html = `<p style="color:var(--do-primary); font-weight:700; margin-bottom:0.5rem;">Tempo: ${workout.tempo}</p>`;
         workout.exercises.forEach(ex => {
-            const completed = stats.workout?.find(w => w.name === ex.name)?.reps || '';
+            const completed = stats.workout?.find(w => w.name === ex.name);
+            const checked = completed?.reps ? 'checked' : '';
+            const repsValue = completed?.reps || '';
             html += `
                 <div class="ex-row">
-                    <span>${ex.name} <small>(${ex.sets} série)</small></span>
-                    <input type="number" placeholder="${ex.reps}" value="${completed}" data-name="${ex.name}" class="reps-input">
+                    <label class="ex-check-label">
+                        <input type="checkbox" class="ex-done-check" data-name="${ex.name}" ${checked}>
+                        <span class="ex-check-icon">☑</span>
+                    </label>
+                    <span class="ex-name">${ex.name} <small>(${ex.sets} série)</small></span>
+                    <input type="number" placeholder="${ex.reps}" value="${repsValue}" data-name="${ex.name}" class="reps-input" style="display:none;">
                 </div>
             `;
         });
 
         workoutDesc.innerHTML = html;
         btnWorkout.style.display = 'block';
-        btnWorkout.textContent = stats.workout && stats.workout.length > 0 ? 'Aktualizovať' : 'Hotovo';
+        btnWorkout.innerHTML = '✔';
+        
+        document.querySelectorAll('.ex-done-check').forEach(check => {
+            const row = check.closest('.ex-row');
+            const repsInput = row.querySelector('.reps-input');
+            
+            check.onchange = () => {
+                repsInput.style.display = check.checked ? 'inline-block' : 'none';
+                if (!check.checked) repsInput.value = '';
+            };
+            
+            if (check.checked) repsInput.style.display = 'inline-block';
+        });
 
         document.querySelectorAll('.reps-input').forEach(input => {
             input.onchange = e => {
@@ -470,10 +488,26 @@ function renderWorkoutCard(todayStr, stats, phase) {
             };
         });
 
-        btnWorkout.onclick = () => {
-            btnWorkout.textContent = 'Uložené';
+        btnWorkout.onclick = async () => {
+            const checked = document.querySelectorAll('.ex-done-check:checked');
+            if (checked.length === 0) {
+                btnWorkout.style.background = 'var(--do-error)';
+                setTimeout(() => btnWorkout.style.background = '', 1000);
+                return;
+            }
+            
+            for (const check of checked) {
+                const row = check.closest('.ex-row');
+                const repsInput = row.querySelector('.reps-input');
+                const val = repsInput.value || '0';
+                await saveWorkoutProgress(todayStr, check.dataset.name, val);
+            }
+            
+            btnWorkout.innerHTML = '✓';
+            btnWorkout.style.background = 'var(--do-success)';
             setTimeout(() => {
-                btnWorkout.textContent = 'Aktualizovať';
+                btnWorkout.innerHTML = '✔';
+                btnWorkout.style.background = '';
             }, 2000);
         };
     } else {

@@ -432,6 +432,30 @@ h1 {
     border: none;
 }
 
+.ex-check-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.ex-done-check {
+    display: none;
+}
+
+.ex-check-icon {
+    font-size: 1.5rem;
+    color: var(--border);
+    user-select: none;
+}
+
+.ex-done-check:checked + .ex-check-icon {
+    color: var(--do-success);
+}
+
+.ex-name {
+    flex: 1;
+}
+
 .reps-input {
     width: 72px;
     padding: 8px 10px;
