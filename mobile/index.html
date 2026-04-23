@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DoFormy - Vnímavý pohyb</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ECC71">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="DoFormy">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
+    <!-- chart.js is intentionally not loaded on mobile for faster cold start -->
+</head>
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+        <symbol id="i-home" viewBox="0 0 24 24">
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 10v11h5v-6h4v6h5V10" />
+        </symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+            <path d="M19.4 15a8 8 0 0 0 .1-1l2-1.2-2-3.5-2.3.6a7.3 7.3 0 0 0-1.7-1L15 6h-6l-.5 2a7.3 7.3 0 0 0-1.7 1L4.5 8.3l-2 3.5 2 1.2a8 8 0 0 0 .1 1 8 8 0 0 0-.1 1l-2 1.2 2 3.5 2.3-.6a7.3 7.3 0 0 0 1.7 1L9 22h6l.5-2a7.3 7.3 0 0 0 1.7-1l2.3.6 2-3.5-2-1.2a8 8 0 0 0-.1-1z" />
+        </symbol>
+        <symbol id="i-sync" viewBox="0 0 24 24">
+            <path d="M21 12a9 9 0 0 1-15.7 6.1" />
+            <path d="M3 12a9 9 0 0 1 15.7-6.1" />
+            <path d="M16 5h3V2" />
+            <path d="M8 19H5v3" />
+        </symbol>
+        <symbol id="i-activity" viewBox="0 0 24 24">
+            <path d="M4 13h3l2-6 4 12 2-6h5" />
+        </symbol>
+        <symbol id="i-scale" viewBox="0 0 24 24">
+            <path d="M6 4h12a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2z" />
+            <path d="M8 9a4 4 0 0 1 8 0" />
+            <path d="M12 9v3" />
+        </symbol>
+        <symbol id="i-droplet" viewBox="0 0 24 24">
+            <path d="M12 2s7 7.4 7 13a7 7 0 0 1-14 0c0-5.6 7-13 7-13z" />
+        </symbol>
+        <symbol id="i-footsteps" viewBox="0 0 24 24">
+            <path d="M8.5 6.5c1.4 0 2.5 1.2 2.5 2.8 0 1.9-1.2 3.2-2.8 3.2-1.6 0-2.7-1.3-2.7-3.1 0-1.7 1.2-2.9 3-2.9z" />
+            <path d="M15.5 11c1.3 0 2.4 1.1 2.4 2.6 0 1.8-1.1 3-2.6 3-1.5 0-2.5-1.2-2.5-2.9 0-1.6 1.1-2.7 2.7-2.7z" />
+        </symbol>
+        <symbol id="i-leaf" viewBox="0 0 24 24">
+            <path d="M20 4c-7 0-12 4-12 12 0 2.5 1 4.5 2.5 6C18 22 22 17 22 10c0-2.5-1-4.5-2-6z" />
+            <path d="M9 15c3-1 6-4 7-7" />
+        </symbol>
+    </svg>
+
+    <div id="do-app">
+        <header>
+            <div class="user-info">
+                <span id="user-level" class="badge">Fáza 1</span>
+                <span id="user-exp">0 XP</span>
+            </div>
+            <h1>Dnes</h1>
+        </header>
+
+        <div id="sync-status-bar" class="sync-status-bar" style="display: none;"></div>
+
+        <button id="btn-sync" class="btn-sync" type="button">
+            <span class="btn-sync-main">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#i-sync" xlink:href="#i-sync"></use>
+                </svg>
+                <span class="btn-sync-label">Synchronizovať</span>
+            </span>
+            <span class="btn-sync-spinner" aria-hidden="true"></span>
+        </button>
+
+        <main id="cards-container">
+            <div id="card-workout" class="do-card">
+                <div class="icon-badge badge-workout" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-activity" xlink:href="#i-activity"></use>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <h3>Cvičenie</h3>
+                    <p id="workout-desc">Dnes je deň oddychu.</p>
+                </div>
+                <button id="btn-workout" class="btn-do">Hotovo</button>
+            </div>
+
+            <div id="card-weight" class="do-card">
+                <div class="icon-badge badge-weight" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-scale" xlink:href="#i-scale"></use>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <h3>Váha</h3>
+                    <p id="weight-val">-- kg</p>
+                    <p id="weight-change" class="weight-change"></p>
+                    <div class="weight-input-row">
+                        <input type="number" id="weight-input" placeholder="kg" step="0.1" class="weight-input">
+                        <button id="btn-weight-save" class="btn-do btn-small">Uložiť</button>
+                    </div>
+                    <div class="weight-chart-container">
+                        <canvas id="weight-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-water" class="do-card">
+                <div class="icon-badge badge-water" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-droplet" xlink:href="#i-droplet"></use>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <h3>Voda</h3>
+                    <p id="water-val">0 / 2500 ml</p>
+                    <div class="water-progress">
+                        <div id="water-fill" class="water-fill"></div>
+                    </div>
+                    <div class="water-buttons">
+                        <button id="btn-water-add" class="btn-do btn-small">+250ml</button>
+                        <button id="btn-water-reset" class="btn-do btn-small btn-outline">0</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-steps" class="do-card">
+                <div class="icon-badge badge-steps" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <use href="#i-footsteps" xlink:href="#i-footsteps"></use>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <h3>Pohyb</h3>
+                    <div class="progress-info">
+                        <span id="steps-val">0</span> / <span id="steps-goal">5000</span>
+                    </div>
+                </div>
+                <button id="btn-steps" class="btn-do">Pridať</button>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="view-settings" class="view-settings" style="display: none;">
+        <h2>Nastavenia</h2>
+        <!-- ... (zvyšok nastavení zostáva rovnaký) ... -->
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Vzhľad</h3>
+                <div class="setting-row">
+                    <div>
+                        <p class="setting-title">Tmavý režim</p>
+                        <p class="settings-desc">Prepne farby celej aplikácie</p>
+                    </div>
+                    <label class="switch" aria-label="Tmavý režim">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Lokálne uloženie</h3>
+                <p class="settings-desc">Záznamy sa ukladajú do localStorage v tomto iPhone ešte pred syncom na server.</p>
+                <div class="storage-status-grid">
+                    <div class="storage-status-row">
+                        <span>Úložisko</span>
+                        <strong id="storage-availability">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Posledný lokálny zápis</span>
+                        <strong id="storage-last-save">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Posledný sync</span>
+                        <strong id="storage-last-sync">-</strong>
+                    </div>
+                    <div class="storage-status-row">
+                        <span>Čaká na sync</span>
+                        <strong id="storage-pending">-</strong>
+                    </div>
+                </div>
+                <p id="storage-detail" class="settings-desc"></p>
+                <p id="storage-last-error" class="storage-error" style="display:none"></p>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Server URL</h3>
+                <p class="settings-desc">Zadajte IP adresu servera (napr. Tailscale)</p>
+                <div class="api-input-row">
+                    <input type="text" id="api-url-input" placeholder="http://100.x.x.x:8000/api" class="api-input">
+                    <button id="btn-save-api" class="btn-do">Uložiť</button>
+                </div>
+                <p id="current-api-url" class="current-url"></p>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Synchronizácia</h3>
+                <p class="settings-desc">Stiahni/ulož dáta z/do servera</p>
+                <div class="sync-buttons">
+                    <button id="btn-sync-download" class="btn-do">Stiahnuť zo servera</button>
+                    <button id="btn-sync-upload" class="btn-do">Nahrať na server</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>Reset dát</h3>
+                <p class="settings-desc">Vymaže všetky záznamy aj na serveri. Nedá sa vrátiť.</p>
+                <button id="btn-reset-all" class="btn-do btn-danger" style="width:100%">Resetovať systém</button>
+            </div>
+        </div>
+
+        <div class="do-card">
+            <div class="card-body">
+                <h3>O aplikácii</h3>
+                <p class="settings-desc">DoFormy v2.0</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="do-nav">
+        <button class="nav-btn active" data-view="home" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#i-home" xlink:href="#i-home"></use>
+            </svg>
+            <span>DoFormy</span>
+        </button>
+        <button class="nav-btn" data-view="settings" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#i-settings" xlink:href="#i-settings"></use>
+            </svg>
+            <span>Nastavenia</span>
+        </button>
+    </nav>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# DoFormy - Gitignore
+
+# Databáza - obsahuje citlivé údaje
+*.db
+*.db.backup-*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logy
+*.log
+
+# TLS certs (never commit private keys)
+certs/
+*.key
+
+# Local test artifacts
+server_test.out
+server_test.err
