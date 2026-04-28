@@ -364,37 +364,6 @@ function initSettings() {
         }
     };
 
-    document.getElementById('btn-sync-download').onclick = async () => {
-        try {
-            if (!DoFormyEngine.getApiUrl()) {
-                alert('Najprv nastavte Server URL.');
-                return;
-            }
-            currentData = await DoFormyEngine.getData({ fallbackToLocal: false });
-            currentData = DoFormyEngine.persistLocalData(currentData, { dirty: false });
-            DoFormyEngine.markSyncSuccess();
-            refreshStatusUi();
-            alert('Dáta stiahnuté.');
-            location.reload();
-        } catch (e) {
-            alert('Chyba: ' + e.message);
-        }
-    };
-
-    document.getElementById('btn-sync-upload').onclick = async () => {
-        try {
-            if (!DoFormyEngine.getApiUrl()) {
-                alert('Najprv nastavte Server URL.');
-                return;
-            }
-            currentData = await DoFormyEngine.syncData(currentData);
-            refreshStatusUi();
-            alert('Dáta zosynchronizované.');
-        } catch (e) {
-            alert('Chyba: ' + e.message);
-        }
-    };
-
     const btnResetAll = document.getElementById('btn-reset-all');
     if (btnResetAll) {
         btnResetAll.onclick = async () => {
