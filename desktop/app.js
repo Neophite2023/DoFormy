@@ -197,9 +197,19 @@ function renderFullPlan(currentLevelName) {
                 <tbody>
         `;
 
-        config.exercises.forEach(ex => {
+        const mondayVariant = DoFormyEngine.buildWorkoutExercises(config, new Date(2026, 2, 23));
+        const wednesdayVariant = DoFormyEngine.buildWorkoutExercises(config, new Date(2026, 2, 25));
+        const alternatingA = mondayVariant.find(ex => ex.name === 'Kliky s vlastnou váhou');
+        const alternatingB = wednesdayVariant.find(ex => ex.name === 'Bench press s jednoručkami');
+        const baseExercises = mondayVariant.filter(ex => ex.name !== 'Kliky s vlastnou váhou' && ex.name !== 'Bench press s jednoručkami');
+
+        baseExercises.forEach(ex => {
             html += `<tr><td>${ex.name}</td><td>${ex.reps}</td></tr>`;
         });
+
+        if (alternatingA && alternatingB) {
+            html += `<tr><td>Kliky s vlastnou váhou / Bench press s jednoručkami</td><td>${alternatingA.reps}</td></tr>`;
+        }
 
         html += '</tbody></table>';
         phaseDiv.innerHTML = html;

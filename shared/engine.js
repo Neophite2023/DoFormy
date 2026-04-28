@@ -220,54 +220,84 @@ export const DoFormyEngine = {
 
     WORKOUT_DATABASE: {
         'Fáza 1: Základy': {
-            sets: 3, reps: '8-12', tempo: 'Kontrolované',
-            exercises: [
-                { name: 'Drepy (vlastná váha)', reps: '12-15' },
-                { name: 'Kliky (o stôl alebo gauč)', reps: '8-10' },
-                { name: 'Príťahy k zárubni dverí', reps: '10 (ťahová technika)' },
-                { name: 'Výpady vzad (vlastná váha)', reps: '10 striedavo' },
-                { name: 'Plank na kolenách/špičkách', reps: '20-30 sekúnd' }
-            ]
+            sets: 3,
+            reps: '10',
+            tempo: 'Kontrolované tempo',
+            plank: '30 sekúnd',
+            exercisesBase: [
+                { name: 'Drepy' },
+                { name: 'Príťahy jednoručiek v predklone' },
+                { name: 'Tlaky nad hlavou s jednoručkami' },
+                { name: 'Plank', type: 'plank' }
+            ],
+            alternating: {
+                a: { name: 'Kliky s vlastnou váhou' },
+                b: { name: 'Bench press s jednoručkami' }
+            }
         },
         'Fáza 2: Prvá záťaž': {
-            sets: 3, reps: '8-12', tempo: 'Pomalé',
-            exercises: [
-                { name: 'Goblet drep (1x15kg)', reps: '8-10' },
-                { name: 'Kliky (na zemi)', reps: 'Max' },
-                { name: 'Príťahy v predklone (1x15kg)', reps: '8 na každú ruku' },
-                { name: 'Rumunský mŕtvy ťah (bez váhy)', reps: '12 (učenie pohybu)' },
-                { name: 'Plank (na špičkách)', reps: '40 sekúnd' }
-            ]
+            sets: 3,
+            reps: '12',
+            tempo: 'Kontrolované tempo, 2s excentrická fáza',
+            plank: '35 sekúnd',
+            exercisesBase: [
+                { name: 'Drepy' },
+                { name: 'Príťahy jednoručiek v predklone' },
+                { name: 'Tlaky nad hlavou s jednoručkami' },
+                { name: 'Plank', type: 'plank' }
+            ],
+            alternating: {
+                a: { name: 'Kliky s vlastnou váhou' },
+                b: { name: 'Bench press s jednoručkami' }
+            }
         },
         'Fáza 3: Sila a Objem': {
-            sets: 4, reps: '10-12', tempo: 'Plynulé',
-            exercises: [
-                { name: 'Bulharské drepy (vlastná váha)', reps: '10 na nohu' },
-                { name: 'Tlak nad hlavu (1x15kg)', reps: '6-8 na každú ruku' },
-                { name: 'Kliky (vlastná váha)', reps: '12-15' },
-                { name: 'Rumunský mŕtvy ťah (2x15kg)', reps: '10' },
-                { name: 'Floor Press (2x15kg)', reps: '10' }
-            ]
+            sets: 4,
+            reps: '10',
+            tempo: 'Pomalé tempo, 3s excentrická fáza',
+            plank: '40 sekúnd',
+            exercisesBase: [
+                { name: 'Drepy' },
+                { name: 'Príťahy jednoručiek v predklone' },
+                { name: 'Tlaky nad hlavou s jednoručkami' },
+                { name: 'Plank', type: 'plank' }
+            ],
+            alternating: {
+                a: { name: 'Kliky s vlastnou váhou' },
+                b: { name: 'Bench press s jednoručkami' }
+            }
         },
         'Fáza 4: Kontrola (TUT)': {
-            sets: 4, reps: '6-10', tempo: '3s negatívna fáza',
-            exercises: [
-                { name: 'Pomalé drepy (15kg)', reps: '10' },
-                { name: 'Kliky (pomalé)', reps: 'Max' },
-                { name: 'Príťahy (2s stlačenie)', reps: '10' },
-                { name: 'Výpady s 15kg činkou', reps: '8 na nohu' },
-                { name: 'Plank s váhou (15kg)', reps: '30 sekúnd' }
-            ]
+            sets: 4,
+            reps: '12',
+            tempo: 'Pomalé tempo, 4s excentrická fáza',
+            plank: '45 sekúnd',
+            exercisesBase: [
+                { name: 'Drepy' },
+                { name: 'Príťahy jednoručiek v predklone' },
+                { name: 'Tlaky nad hlavou s jednoručkami' },
+                { name: 'Plank', type: 'plank' }
+            ],
+            alternating: {
+                a: { name: 'Kliky s vlastnou váhou' },
+                b: { name: 'Bench press s jednoručkami' }
+            }
         },
         'Fáza 5: Elita': {
-            sets: 5, reps: '12-15', tempo: 'Kruhové / bez pauzy',
-            exercises: [
-                { name: 'Angličáky (Burpees)', reps: '12' },
-                { name: 'Thrusters (Drep+Tlak 15kg)', reps: '10' },
-                { name: 'Kliky s úzkym úchopom', reps: 'Max' },
-                { name: 'Turecký vztyk (1x15kg)', reps: '3 na stranu' },
-                { name: 'Horolezec (Mountain Climber)', reps: '45 sekúnd' }
-            ]
+            sets: 5,
+            reps: '10',
+            tempo: 'Pomalé tempo, 5s excentrická fáza',
+            plank: '50 sekúnd',
+            exercisesBase: [
+                { name: 'Drepy' },
+                { name: 'Príťahy jednoručiek v predklone' },
+                { name: 'Tlaky nad hlavou s jednoručkami' },
+                { name: 'Plank', type: 'plank' }
+            ],
+            alternating: {
+                a: { name: 'Kliky s vlastnou váhou' },
+                b: { name: 'Bench press s jednoručkami' }
+            }
         }
     },
 
@@ -688,15 +718,45 @@ export const DoFormyEngine = {
         });
     },
 
-    getWorkoutForDay(date, levelName) {
+    isWorkoutDay(date) {
         const day = date.getDay();
-        const workoutDays = [1, 3, 5];
+        return day === 1 || day === 3 || day === 5;
+    },
+
+    getWorkoutIndex(date) {
+        const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const anchor = new Date(2026, 2, 23); // Monday
+        const direction = target >= anchor ? 1 : -1;
+        const current = new Date(anchor);
+        let count = 0;
+
+        while (direction === 1 ? current <= target : current > target) {
+            if (this.isWorkoutDay(current)) count++;
+            current.setDate(current.getDate() + direction);
+        }
+
+        return direction === 1 ? Math.max(0, count - 1) : Math.abs(count);
+    },
+
+    buildWorkoutExercises(config, date) {
+        const isVariantA = this.getWorkoutIndex(date) % 2 === 0;
+        const alternatingExercise = isVariantA ? config.alternating.a : config.alternating.b;
+        const workoutExercises = [config.exercisesBase[0], alternatingExercise, ...config.exercisesBase.slice(1)];
+
+        return workoutExercises.map(ex => ({
+            name: ex.name,
+            reps: ex.type === 'plank' ? config.plank : config.reps,
+            sets: config.sets
+        }));
+    },
+
+    getWorkoutForDay(date, levelName) {
         const config = this.WORKOUT_DATABASE[levelName] || this.WORKOUT_DATABASE['Fáza 1: Základy'];
 
-        if (workoutDays.includes(day)) {
+        if (this.isWorkoutDay(date)) {
             return {
                 title: `${levelName} (Tréning)`,
-                exercises: config.exercises.map(ex => ({ ...ex, sets: config.sets })),
+                exercises: this.buildWorkoutExercises(config, date),
                 tempo: config.tempo
             };
         }
@@ -735,20 +795,19 @@ export const DoFormyEngine = {
         const stats = data.history[todayStr] || {};
         const levelName = data.user.levelName || 'Fáza 1: Základy';
 
-        const day = today.getDay();
-        const workoutDays = [1, 3, 5];
         const config = this.WORKOUT_DATABASE[levelName] || this.WORKOUT_DATABASE['Fáza 1: Základy'];
 
-        if (workoutDays.includes(day)) {
+        if (this.isWorkoutDay(today)) {
+            const plannedExercises = this.buildWorkoutExercises(config, today);
             return {
                 title: `${levelName} (Tréning)`,
                 tempo: config.tempo,
-                exercises: config.exercises.map(ex => {
+                exercises: plannedExercises.map(ex => {
                     const completed = stats.workout?.find(w => w.name === ex.name);
                     return {
                         name: ex.name,
                         reps: ex.reps,
-                        sets: config.sets,
+                        sets: ex.sets,
                         completed: completed?.reps || 0
                     };
                 })
